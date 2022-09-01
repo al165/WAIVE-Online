@@ -1,0 +1,93 @@
+<!doctype html>
+<html>
+    <head>
+        <meta charset="UTF-8">
+        <title><%= htmlWebpackPlugin.options.title %></title>
+    </head>
+    <body>
+    <div id="content">
+
+		<h1>WAIVE-Online</h1>
+		<p>Welcome to the prototype browser-based interface to WAIVE: the AI that generates dance music from archieved sound materials.</p>
+		<p><i>This is an early WIP and may break/change at anytime.</i></p>
+
+		<div id="drum-machine">
+    		<div class="row">
+                <div id="play" class="btn">play</div>
+                <input type="number" min="60" max="200" id="bpm" value="110">
+    		</div>
+    		<div class="row"><h2>Drum Machine</h2></div>
+    		<div class="play-area">
+                <canvas width="800" height="306" id="beatgrid"></canvas>
+                <div class="p-bar"></div>
+            </div>
+            <div id="drum-channels">
+            </div>
+            <canvas width="800" height="60" id="beatgrid-arrangement"></canvas>
+    		<div class="controls">
+                <div id="request-grid" class="btn">new drum patterns</div>
+                <input type="range" class="input-knob" id="drum-threshold" data-diameter="40" min="0" max="1" step="0.01" data-bgcolor="#444" data-fgcolor="#BBB"/>
+    		</div>
+
+    		<div class="row"><h2>Sampler</h2></div>
+    		<div class="play-area">
+    			<canvas width="800" height="102" id="soundgrid"></canvas>
+                <div class="p-bar"></div>
+    		</div>
+			<div id="sound-controls">
+			</div>
+			<canvas width="800" height="60" id="soundgrid-arrangement"></canvas>
+    		<div class="controls">
+                <div id="request-sound-pattern" class="btn">new sampler patterns</div>
+                <div id="request-sound-samples" class="btn">new samples</div>
+    		</div>
+    		<div class="row"><h2>Master FX</h2></div>
+    		<div class="row" id="master-controls">
+
+    		</div>
+
+		</div>
+
+		<h3>How to use</h3>
+		<ul>
+    		<li>"play" and "bpm" controls are at the top.</li>
+    		<li><b>Drum Machine:</b>
+        		<ul>
+    				<li>Load samples for the KickDrum, SnareDrum and HighHat by clicking the "new sample" button.</li>
+    				<li>You can trigger the sample manually by pressing the ▶ button.</li>
+            		<li>The name of the sample is shown below these buttons, along with the number of samples in the queue given in the square brackets.</li>
+            		<li>After ever loop of the drum beat the next sample is played until there is no more left in the queue.</li>
+            		<li>You will need to generate a drum pattern to begin hearing the drum samples with the "new drum patterns" button.</li>
+            		<li>The current drum pattern is shown on the large grid, and the queue of the next patterns shown below on the smaller grid. After each loop, the next pattern is selected until there are no more.</li>
+            		<li>The dial next to the pattern generate button sets how sensitivity of the pattern - the lower the dial, the more drum triggers there are.</li>
+        		</ul>
+    		</li>
+    		<li><b>Sampler:</b>
+        		<ul>
+            		<li>Generate a "melody" of sound samples by clicking "new sampler patterns" button. This will request a sequence of melodies shown below the main grid.</li>
+            		<li>The names of each sample are shown in the coloured boxes.</li>
+            		<li>"new samples" button will transition the current set of samples to a new set after each loop.</li>
+        		</ul>
+        	</li>
+    		<li><b>FXs:</b>
+        		<ul>
+            		<li>Click on the name of an effect to toggle it (colored background means the effect is active, greyed and crossed out means it is bypassed).</li>
+            		<li>Parameters of the effects can be changed by dragging up or down on a dial.</li>
+            		<li>The <b>Drum Machine</b> and <b>Sampler</b> are mixed into <b>Master FX</b></li>
+        		</ul>
+        	</li>
+		</ul>
+
+		<h3>Next steps:</h3>
+		<ul>
+    		<li>Add many more samples and FXs.</li>
+    		<li>Add velocity to drum hits and sampler to make groove.</li>
+    		<li>Add feature to generate 4 bar loops.</li>
+    		<li>Add keyboard shortcuts</li>
+    		<li>Add automatic FX parameter modulation</li>
+    		<li>Add abilty to rearrage/add different effects.</li>
+    	</ul>
+
+    </div>
+    </body>
+</html>
