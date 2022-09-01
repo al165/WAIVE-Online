@@ -32,6 +32,7 @@ def index():
 
 @app.route("/api/<func>/<id>", methods=["GET"])
 def apiRequest(func, id):
+    print(f'apiRequest: /api/{func}/{id}')
     data = request.args.to_dict()
 
     msg_q.put((func, id, data))
@@ -56,3 +57,6 @@ def getSoundAudioFile(category, folder, fn):
         fn,
         as_attachment=False,
     )
+
+if __name__ == "__main__":
+    app.run(host='0.0.0.0')

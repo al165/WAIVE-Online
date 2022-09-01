@@ -9,7 +9,7 @@ import { createKnob, createSelection, createSwitch, Meter } from './gui.js';
 const STOPPED = 0;
 const STARTED = 1;
 
-const BASE_URL = "/audio/";
+const ROOT_URL = "/waive";
 
 Tone.Transport.bpm.value = 110;
 Tone.Transport.loop = true;
@@ -32,8 +32,7 @@ const id = "test";
 let drumPattern = [];
 let soundPattern = [];
 let soundSamples = [];
-//let soundBuffers = new Tone.ToneAudioBuffers({urls: {}, baseUrl: '/sound/'});
-let soundPlayers = new Tone.Players({baseUrl: "/sound/"});
+let soundPlayers = new Tone.Players({baseUrl: ROOT_URL + "/sound/"});
 
 
 // FX Chains
@@ -46,7 +45,7 @@ const SOUND_FX_CHAIN = [
 ]
 
 const MASTER_FX_CHAIN = [
-	'meter', 'reverb', 'filter', 'eq3', 'compressor', 'limiter', 'gain', 'meter'
+	'meter', 'delay', 'reverb', 'filter', 'eq3', 'compressor', 'limiter', 'gain', 'meter'
 ]
 
 const NON_BYPASSABLE = ['meter', 'vol', 'solo', 'gain'];
@@ -224,10 +223,10 @@ function apiCall(m_type, data) {
 		parameters += key + "=" + data[key] + "&";
     }
 
-	return fetch(`/api/${m_type}/${id}${parameters}`)
+	return fetch(`${ROOT_URL}/api/${m_type}/${id}${parameters}`)
 	.then(response => {
 		if(!response.ok){
-    		throw new Error(`request failed with status ${response.status}`);
+    		throw new Error(`request for ${ROOT_URL}/api/${m_type}/${id}${parameters} failed with status ${response.status}`);
 		}
 		return response.json();
 	})
@@ -705,7 +704,7 @@ function updateDrumSamples(){
     	if(drumSampleToLoad[ins_name] && drumSampleToLoad[ins_name].length > 0){
 
 			const fp = getSamplePath(drumSampleToLoad[ins_name][0]);
-            const url = "/drum/" + fp[0] + "/" + fp[1] + "/" + fp[2];
+            const url = ROOT_URL + "/drum/" + fp[0] + "/" + fp[1] + "/" + fp[2];
 
             drumBuffers[ins_name].load(url)
             .then((buffer) => {
@@ -726,7 +725,8 @@ function updateSoundSamples(){
     		const fp = getSamplePath(url);
     		if(soundPlayers.has(fp[2])) continue;
 
-    		const u = fp[0] + "/" + fp[1] + "/" + fp[2];
+		const fn = fp[2].replace('.wav', '.mp3');
+    		const u = fp[0] + "/" + fp[1] + "/" + fn;
 			soundPlayers.add(fp[2], u);
     	}
     }
