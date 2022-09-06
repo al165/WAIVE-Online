@@ -58,14 +58,14 @@ p {
 
 .sample-request-controls {
 	display: grid;
-	grid-template-columns: auto auto;
+	grid-template-columns: auto auto auto;
 	margin-right: 20px;
-	width: 220px;
+	width: 240px;
 }
 
 .drum-sample-name {
 	grid-column-start: 1;
-	grid-column-end: 3;
+	grid-column-end: 4;
 	background-color: darkgray;
 	font-size: 11px;
 	overflow: hidden;
@@ -73,6 +73,7 @@ p {
 	height: 13pt;
 	line-break: anywhere;
 	font-family: monospace;
+	color: black;
 }
 
 .btn {
@@ -183,7 +184,7 @@ select {
 #drum-machine {
     position: relative;
     left: 50%;
-    transform: translateX(-50%);
+    transform: translateX(-50%) scale(0.85);
 	width: fit-content;
 	display: grid;
 	grid-template-columns: auto auto;
@@ -192,6 +193,7 @@ select {
 	border: solid 1px black;
 	filter: drop-shadow(5px 5px 16px gray);
 	border-radius: 16px;
+	padding: 10px;
 }
 
 #drum-channels {

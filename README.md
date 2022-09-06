@@ -4,10 +4,11 @@ Prototype browser-based interface to WAIVE: the AI that generates dance music fr
 
 
 In development environment:
-'''
+```
+$ npm install
 $ npm run build
-'''
+```
 
-'''
+```
 $ flask --app server.py run
-'''
+```

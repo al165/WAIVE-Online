@@ -4,12 +4,15 @@ import './input-knobs.js';
 import './knob.png';
 import './slider.png';
 
+const MidiWriter = require("midi-writer-js");
+
 import { createKnob, createSelection, createSwitch, Meter } from './gui.js';
 
 const STOPPED = 0;
 const STARTED = 1;
 
-const ROOT_URL = "/waive";
+console.log(window.location.pathname);
+const ROOT_URL = window.location.pathname;
 
 Tone.Transport.bpm.value = 110;
 Tone.Transport.loop = true;
@@ -32,7 +35,7 @@ const id = "test";
 let drumPattern = [];
 let soundPattern = [];
 let soundSamples = [];
-let soundPlayers = new Tone.Players({baseUrl: ROOT_URL + "/sound/"});
+let soundPlayers = new Tone.Players({baseUrl: ROOT_URL + "sound/"});
 
 
 // FX Chains
@@ -52,35 +55,12 @@ const NON_BYPASSABLE = ['meter', 'vol', 'solo', 'gain'];
 
 let threshold = 0.2;
 
-let drumSamples = {
-	"00_KD": [],
-	"01_SD": [],
-	"02_HH": [],
-}
-
-let drumSampleToLoad = {
-    "00_KD": [],
-	"01_SD": [],
-	"02_HH": [],
-}
-
-let drumBuffers = {
-    "00_KD": new Tone.ToneAudioBuffer(),
-    "01_SD": new Tone.ToneAudioBuffer(),
-    "02_HH": new Tone.ToneAudioBuffer(),
-}
-
-let drumPlayers = {
-    "00_KD": new Tone.Player(),
-    "01_SD": new Tone.Player(),
-    "02_HH": new Tone.Player(),
-}
-
-let drumParts = {
-    "00_KD": null,
-    "01_SD": null,
-    "02_HH": null,
-}
+const drumSampleToLoad = {};
+const drumBuffers = {};
+const drumPlayers = {};
+const drumPlayersVelocity = {};
+const drumSampleLabels = {};
+const drumSampleURL = {};
 
 const DRUMCOLORS = {
 	"00_KD": "#F44",
@@ -88,14 +68,17 @@ const DRUMCOLORS = {
 	"02_HH": "#FF8",
 }
 
-const drumSampleLabels = {};
-
 const INS_NAMES = {
 	0: "00_KD",
 	1: "01_SD",
 	2: "02_HH",
 }
 
+const DRUM_MIDI_MAP = {
+	"00_KD": 36,
+	"01_SD": 38,
+	"02_HH": 42
+}
 
 let drumChain = {};
 let soundChain = [];
@@ -107,8 +90,10 @@ class DrumBar {
 	constructor(beat_grid, threshold) {
 		this.beat_grid = beat_grid;
 		this.parts = {};
+		this.timings = {};
 		// avoid unneccessary updates
 		this.last_threshold = null;
+		this.midi = null;
 
 		if(threshold){
     		this.update(threshold);
@@ -125,20 +110,30 @@ class DrumBar {
 		for(let i=0; i<this.beat_grid.length; i++){
     		const ins_name = INS_NAMES[i];
     		let timings = [];
+    		const max_velocity = Math.max(...this.beat_grid[i]);
+
 			for(let j=0; j<this.beat_grid[i].length; j++){
 				if(this.beat_grid[i][j] < threshold){
     				continue
 				}
 
     			const time = j*48+"i";
-    			timings.push([time, "A1"]);
+    			timings.push({
+					time: time,
+					velocity: this.beat_grid[i][j]/max_velocity,
+					note: "A1",
+					index: j,
+				});
         	}
 
-        	let part = new Tone.Part((time, note) => {
+        	let part = new Tone.Part((time, value) => {
             	if(drumBuffers[ins_name].loaded){
             		drumPlayers[ins_name].start(time, 0, "16t");
+            		drumPlayersVelocity[ins_name].gain.setValueAtTime(value.velocity, time);
             	}
         	}, timings);
+
+        	this.timings[ins_name] = timings;
 
 			if(this.parts[ins_name]){
     			this.parts[ins_name].dispose();
@@ -147,6 +142,7 @@ class DrumBar {
 		}
 
 		this.last_threshold = threshold;
+		this.midi = null;
 	}
 
 	start(time = 0){
@@ -169,6 +165,37 @@ class DrumBar {
     		this.parts[ins_name].stop();
     		this.parts[ins_name].dispose();
     	}
+	}
+
+	toMidi(){
+		if(this.midi){
+    		return this.midi;
+		}
+
+		const track = new MidiWriter.Track();
+
+		for(const ins_name in this.timings){
+			for(const event of this.timings[ins_name]){
+    			const time = event.index;
+    			const velocity = event.velocity;
+    			const startTick = Math.floor(time*512/16);
+    			const pitch = DRUM_MIDI_MAP[ins_name];
+
+    			track.addEvent(new MidiWriter.NoteEvent({
+        			pitch: pitch,
+        			duration: "16",
+        			velocity: Math.floor(velocity*100),
+        			startTick: startTick,
+        			channel: 10,
+    			}));
+			}
+		}
+
+		const midi = new MidiWriter.Writer(track);
+		console.log(midi.dataUri());
+		this.midi = midi.dataUri();
+
+		return this.midi;
 	}
 }
 
@@ -223,10 +250,10 @@ function apiCall(m_type, data) {
 		parameters += key + "=" + data[key] + "&";
     }
 
-	return fetch(`${ROOT_URL}/api/${m_type}/${id}${parameters}`)
+	return fetch(`${ROOT_URL}api/${m_type}/${id}${parameters}`)
 	.then(response => {
 		if(!response.ok){
-    		throw new Error(`request for ${ROOT_URL}/api/${m_type}/${id}${parameters} failed with status ${response.status}`);
+    		throw new Error(`request for ${ROOT_URL}api/${m_type}/${id}${parameters} failed with status ${response.status}`);
 		}
 		return response.json();
 	})
@@ -238,6 +265,15 @@ function apiCall(m_type, data) {
 	.catch(error => console.log(error));
 }
 
+function download(href, filename) {
+	var a = document.createElement("a");
+	a.style = "display: none";
+	a.href = href;
+	a.download = filename;
+	document.body.appendChild(a);
+	a.click();
+	a.remove();
+}
 
 // Beat grid display
 function drawBeatGrid() {
@@ -280,20 +316,24 @@ function drawBeatGrid() {
 	for(let i = 0; i < 3; i++){
     	const ins_name = INS_NAMES[i];
 		beatgrid.fillStyle = DRUMCOLORS[ins_name];
-		beatgrid.strokeStyle = "#F00";
+		beatgrid.strokeStyle = DRUMCOLORS[ins_name];
+
+		const max_velocity = Math.max(...beat_grid[i]);
 
      	for(let j = 0; j < 16; j++){
 			if(beat_grid[i][j] < threshold){
     			continue;
 			}
 
-			beatgrid.fillRect(j*blockWidth, i*blockHeight, blockWidth, blockHeight);
+			const velocity = beat_grid[i][j]/max_velocity;
+
+			beatgrid.fillRect(j*blockWidth, (i+1)*blockHeight, blockWidth, -blockHeight*velocity);
 			beatgrid.strokeRect(j*blockWidth, i*blockHeight, blockWidth, blockHeight);
     	}
 	}
 
-
-	for(let k=0; k<drumPattern.length; k++){
+	// Drum queue
+	for(let k = 0; k < drumPattern.length; k++){
 		beat = drumPattern[k];
 		beat_grid = beat.beat_grid;
 
@@ -606,7 +646,13 @@ function buildFXChain(fxList, channels=2, bypass=false){
 
 function setup(){
     // build DRUM FXs chain and controls
-    for(let ins_name in drumSamples){
+    for(let ins_name in DRUMCOLORS){
+
+		drumPlayers[ins_name] = new Tone.Player();
+		drumPlayersVelocity[ins_name] = new Tone.Gain();
+		drumBuffers[ins_name] = new Tone.ToneAudioBuffer();
+		drumSampleToLoad[ins_name] = [];
+
 		const channel = document.createElement("div");
 		channel.classList.add("ins-channel");
 		channel.setAttribute("ins", ins_name);
@@ -632,7 +678,7 @@ function setup(){
         }
         sampleRequestControls.appendChild(requestBtn);
 
-        const trigBtn= document.createElement("div");
+        const trigBtn = document.createElement("div");
         trigBtn.className = "btn";
         trigBtn.innerText = "▶";
         trigBtn.onclick = () => {
@@ -642,9 +688,23 @@ function setup(){
         }
         sampleRequestControls.appendChild(trigBtn);
 
+        const downloadBtn = document.createElement("div");
+        downloadBtn.className = "btn";
+        downloadBtn.innerText = "⤓";
+        downloadBtn.onclick = () => {
+            if(drumSampleURL[ins_name]){
+				const url = drumSampleURL[ins_name].url;
+				const fp = drumSampleURL[ins_name].fp;
+
+				download(url, fp);
+            }
+        }
+        sampleRequestControls.appendChild(downloadBtn);
+
         const sampleName = document.createElement("span");
         sampleName.classList.add("drum-sample-name");
         sampleName.innerText = "---";
+        sampleName.setAttribute("target", "_blank");
         drumSampleLabels[ins_name] = sampleName;
         sampleRequestControls.append(sampleName);
 
@@ -656,9 +716,9 @@ function setup(){
 
 		document.getElementById("drum-channels").appendChild(channel);
 
-    	drumPlayers[ins_name].connect(chain[0]);
+    	drumPlayers[ins_name].connect(drumPlayersVelocity[ins_name]);
+    	drumPlayersVelocity[ins_name].connect(chain[0]);
 
-		//chain[chain.length - 1].toDestination();
 		drumChain[ins_name] = chain;
     }
 
@@ -683,7 +743,7 @@ function setup(){
     masterChain = chain;
     masterChain[masterChain.length - 1].toDestination();
     soundChain[soundChain.length - 1].connect(masterChain[0]);
-    for(let ins_name in drumSamples){
+    for(let ins_name in DRUMCOLORS){
         drumChain[ins_name][drumChain[ins_name].length - 1].connect(masterChain[0]);
     }
 
@@ -700,11 +760,11 @@ function cleanName(name){
 
 
 function updateDrumSamples(){
-	for(let ins_name in drumSamples){
+	for(let ins_name in DRUMCOLORS){
     	if(drumSampleToLoad[ins_name] && drumSampleToLoad[ins_name].length > 0){
 
 			const fp = getSamplePath(drumSampleToLoad[ins_name][0]);
-            const url = ROOT_URL + "/drum/" + fp[0] + "/" + fp[1] + "/" + fp[2];
+            const url = ROOT_URL + "drum/" + fp[0] + "/" + fp[1] + "/" + fp[2];
 
             drumBuffers[ins_name].load(url)
             .then((buffer) => {
@@ -712,8 +772,9 @@ function updateDrumSamples(){
                 drumPlayers[ins_name].buffer = buffer;
             });
 
-			const lable = `[ ${drumSampleToLoad[ins_name].length - 1} ] ${cleanName(fp[2])}`;
-			drumSampleLabels[ins_name].innerText = lable;
+			const label = `[ ${drumSampleToLoad[ins_name].length - 1} ] ${cleanName(fp[2])}`;
+			drumSampleLabels[ins_name].innerText = label;
+			drumSampleURL[ins_name] = {url: url, fp: fp};
     	}
 	}
 }
@@ -906,6 +967,18 @@ window.onload = () => {
        	updateAudioTimes();
     	drawBeatGrid();
     }
+
+	const drumMidiDownload = document.getElementById("drum-midi-download");
+	drumMidiDownload.onclick = function() {
+    	if(drumPattern.length == 0){
+        	return
+    	}
+    	const midi = drumPattern[0].toMidi();
+    	console.log(midi);
+
+		download(midi, "drum_pattern.mid");
+
+	}
 
 	Tone.Transport.schedule(nextBar, "0:0:15");
 

@@ -21,6 +21,7 @@
   "dependencies": {
     "knob": "^1.1.0",
     "lodash": "^4.17.21",
+    "midi-writer-js": "^2.1.0",
     "tone": "^14.7.77"
   }
 }
