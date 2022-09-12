@@ -7,9 +7,9 @@ import './slider.png';
 const MidiWriter = require("midi-writer-js");
 
 import { createKnob, createSelection, createSwitch, Meter } from './gui.js';
+import { download, getSamplePath, apiCall, cleanName, makeSoundRange } from './utils.js';
+import { DrumBar, SoundBar } from './waive_components.js';
 
-const STOPPED = 0;
-const STARTED = 1;
 
 console.log(window.location.pathname);
 const ROOT_URL = window.location.pathname;
@@ -85,195 +85,6 @@ let soundChain = [];
 let masterChain = []
 let meters = [];
 
-
-class DrumBar {
-	constructor(beat_grid, threshold) {
-		this.beat_grid = beat_grid;
-		this.parts = {};
-		this.timings = {};
-		// avoid unneccessary updates
-		this.last_threshold = null;
-		this.midi = null;
-
-		if(threshold){
-    		this.update(threshold);
-		}
-		this.state = STOPPED;
-	}
-
-	update(threshold){
-    	if(!threshold || threshold == this.last_threshold){
-        	//console.log("threshold is " + threshold + " (last threshold " + this.last_threshold + ")");
-			return
-    	}
-		// updates the part with new timings
-		for(let i=0; i<this.beat_grid.length; i++){
-    		const ins_name = INS_NAMES[i];
-    		let timings = [];
-    		const max_velocity = Math.max(...this.beat_grid[i]);
-
-			for(let j=0; j<this.beat_grid[i].length; j++){
-				if(this.beat_grid[i][j] < threshold){
-    				continue
-				}
-
-    			const time = j*48+"i";
-    			timings.push({
-					time: time,
-					velocity: this.beat_grid[i][j]/max_velocity,
-					note: "A1",
-					index: j,
-				});
-        	}
-
-        	let part = new Tone.Part((time, value) => {
-            	if(drumBuffers[ins_name].loaded){
-            		drumPlayers[ins_name].start(time, 0, "16t");
-            		drumPlayersVelocity[ins_name].gain.setValueAtTime(value.velocity, time);
-            	}
-        	}, timings);
-
-        	this.timings[ins_name] = timings;
-
-			if(this.parts[ins_name]){
-    			this.parts[ins_name].dispose();
-			}
-			this.parts[ins_name] = part;
-		}
-
-		this.last_threshold = threshold;
-		this.midi = null;
-	}
-
-	start(time = 0){
-    	this.state = STARTED;
-    	for(const ins_name in this.parts){
-    		this.parts[ins_name].start(time);
-    	}
-	}
-
-	stop(){
-    	this.state = STOPPED;
-    	for(const ins_name in this.parts){
-    		this.parts[ins_name].stop();
-    	}
-	}
-
-	end(){
-    	this.state = STOPPED;
-    	for(const ins_name in this.parts){
-    		this.parts[ins_name].stop();
-    		this.parts[ins_name].dispose();
-    	}
-	}
-
-	toMidi(){
-		if(this.midi){
-    		return this.midi;
-		}
-
-		const track = new MidiWriter.Track();
-
-		for(const ins_name in this.timings){
-			for(const event of this.timings[ins_name]){
-    			const time = event.index;
-    			const velocity = event.velocity;
-    			const startTick = Math.floor(time*512/16);
-    			const pitch = DRUM_MIDI_MAP[ins_name];
-
-    			track.addEvent(new MidiWriter.NoteEvent({
-        			pitch: pitch,
-        			duration: "16",
-        			velocity: Math.floor(velocity*100),
-        			startTick: startTick,
-        			channel: 10,
-    			}));
-			}
-		}
-
-		const midi = new MidiWriter.Writer(track);
-		console.log(midi.dataUri());
-		this.midi = midi.dataUri();
-
-		return this.midi;
-	}
-}
-
-class SoundBar {
-	constructor(pattern, samples){
-		this.pattern = pattern;
-		this.samples = samples;
-
-		let timings = [];
-		for(let i = 0; i < pattern.length; i++){
-			const start = pattern[i][0];
-			const end = pattern[i][1];
-
-			const time = start*48 + "i";
-			const length = (end - start)*48 + "i";
-			const fn = getSamplePath(samples[i])[2];
-
-			//console.log(`${fn}: ${time} ${length}`);
-
-			timings.push({time: time, fn: fn, length: length});
-		}
-
-		this.part = new Tone.Part((time, val) => {
-			soundPlayers.player(val.fn).start(time, 0, val.length)
-		}, timings)
-	}
-
-	start(time=0){
-		this.state = STARTED;
-		this.part.start(time);
-	}
-
-	stop(){
-    	this.state = STOPPED;
-    	this.part.stop();
-	}
-
-	end(){
-		this.stop();
-		this.part.dispose();
-	}
-}
-
-
-function apiCall(m_type, data) {
-    if(!data){
-        data = {};
-    }
-
-    let parameters = '?';
-    for(const key in data){
-		parameters += key + "=" + data[key] + "&";
-    }
-
-	return fetch(`${ROOT_URL}api/${m_type}/${id}${parameters}`)
-	.then(response => {
-		if(!response.ok){
-    		throw new Error(`request for ${ROOT_URL}api/${m_type}/${id}${parameters} failed with status ${response.status}`);
-		}
-		return response.json();
-	})
-	.then(data => {
-		//console.log(data);
-		//document.getElementById("request-result").innerText = "DEBUG:\n" + JSON.stringify(data);
-		return data;
-	})
-	.catch(error => console.log(error));
-}
-
-function download(href, filename) {
-	var a = document.createElement("a");
-	a.style = "display: none";
-	a.href = href;
-	a.download = filename;
-	document.body.appendChild(a);
-	a.click();
-	a.remove();
-}
 
 // Beat grid display
 function drawBeatGrid() {
@@ -441,16 +252,6 @@ function drawSoundGrid(){
 }
 
 
-function getSamplePath(full_path){
-
-	const fp = full_path.split("/");
-
-	const sample_category = fp[fp.length - 3];
-	const sample_folder = fp[fp.length - 2];
-	const sample_name = fp[fp.length - 1];
-
-	return [sample_category, sample_folder, sample_name];
-}
 
 /* wrapper for effect class / bus
     https://github.com/Tonejs/Tone.js/issues/187
@@ -665,7 +466,7 @@ function setup(){
 		requestBtn.className = "request-drum-samples btn";
 		requestBtn.innerText = "new sample";
         requestBtn.onclick = () => {
-            apiCall("requestDrumSample", {instrument: ins_name})
+            apiCall(id, ROOT_URL, "requestDrumSample", {instrument: ins_name})
             .then(data => {
                 if(!data || !data["ok"]){
                     console.log("no drum sample data for " + ins_name);
@@ -749,16 +550,6 @@ function setup(){
 
 }
 
-function cleanName(name){
-    let result = name;
-	result = result.replace(/_+|-/g, " ");
-	result = result.replace(/[0-9]/g, "");
-	result = result.replace(/.wav|.mp3/, "");
-	result = result.trim();
-	return result;
-}
-
-
 function updateDrumSamples(){
 	for(let ins_name in DRUMCOLORS){
     	if(drumSampleToLoad[ins_name] && drumSampleToLoad[ins_name].length > 0){
@@ -830,33 +621,9 @@ function nextBar(){
 	}
 }
 
-
-function makeSoundRange(trig){
-	let result = [];
-	let r = [];
-	for(let i=0; i<trig.length; i++){
-		if(trig[i] != 1) continue
-
-		if(r.length == 0){
-    		r = [i];
-		} else {
-    		r.push(i);
-			result.push(r);
-			r = [i];
-		}
-	}
-	if(r.length == 1){
-    	r.push(16);
-    	result.push(r);
-	}
-
-	return result;
-}
-
-
 window.onload = () => {
     // register user
-    apiCall("registerSession")
+    apiCall(id, ROOT_URL, "registerSession")
     .then(data => {
         console.log("Register session complete");
     });
@@ -875,7 +642,7 @@ window.onload = () => {
 
     // Setup controls
     document.getElementById("request-grid").onclick = () => {
-        apiCall("requestDrumPattern")
+        apiCall(id, ROOT_URL, "requestDrumPattern")
         .then(data => {
             if(!data || !data["ok"]){
                 console.log("no drum pattern data");
@@ -883,7 +650,7 @@ window.onload = () => {
             }
 
 			for(let beat_grid of data["beat_grid"]){
-				let db = new DrumBar(beat_grid, threshold);
+				let db = new DrumBar(beat_grid, threshold, INS_NAMES, drumBuffers, drumPlayers, drumPlayersVelocity);
 				drumPattern.push(db);
 				if(drumPattern.length == 1){
 					drumPattern[0].start(0);
@@ -894,7 +661,7 @@ window.onload = () => {
         });
     }
     document.getElementById("request-sound-pattern").onclick = () => {
-        apiCall("requestSynthData", {key: "trig"})
+        apiCall(id, ROOT_URL, "requestSynthData", {key: "trig"})
         .then(data => {
             if(!data || !data["ok"]){
                 console.log("no sound pattern data");
@@ -916,7 +683,7 @@ window.onload = () => {
     }
 
     document.getElementById("request-sound-samples").onclick = () => {
-        apiCall("requestSynthData", {key: "synth"})
+        apiCall(id, ROOT_URL, "requestSynthData", {key: "synth"})
         .then(data => {
             if(!data || !data["ok"]){
                 console.log("no sound pattern data");
