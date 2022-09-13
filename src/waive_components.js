@@ -1,4 +1,5 @@
 import * as Tone from 'tone';
+import { getSamplePath } from './utils.js';
 
 const STOPPED = 0;
 const STARTED = 1;
@@ -123,9 +124,10 @@ export class DrumBar {
 }
 
 export class SoundBar {
-	constructor(pattern, samples){
+	constructor(pattern, samples, sound_players){
 		this.pattern = pattern;
 		this.samples = samples;
+		this.sound_players = sound_players;
 
 		let timings = [];
 		for(let i = 0; i < pattern.length; i++){
@@ -142,7 +144,9 @@ export class SoundBar {
 		}
 
 		this.part = new Tone.Part((time, val) => {
-			soundPlayers.player(val.fn).start(time, 0, val.length)
+    		if(this.sound_players.has(val.fn)){
+    			this.sound_players.player(val.fn).start(time, 0, val.length)
+    		}
 		}, timings)
 	}
 

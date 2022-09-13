@@ -19,6 +19,7 @@
     "webpack-cli": "^4.10.0"
   },
   "dependencies": {
+    "audio-recorder-polyfill": "^0.4.1",
     "knob": "^1.1.0",
     "lodash": "^4.17.21",
     "midi-writer-js": "^2.1.0",

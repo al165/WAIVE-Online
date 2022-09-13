@@ -5,6 +5,8 @@ import './knob.png';
 import './slider.png';
 
 const MidiWriter = require("midi-writer-js");
+import AudioRecorder from 'audio-recorder-polyfill';
+window.MediaRecorder = AudioRecorder;
 
 import { createKnob, createSelection, createSwitch, Meter } from './gui.js';
 import { download, getSamplePath, apiCall, cleanName, makeSoundRange } from './utils.js';
@@ -17,6 +19,9 @@ const ROOT_URL = window.location.pathname;
 Tone.Transport.bpm.value = 110;
 Tone.Transport.loop = true;
 Tone.Transport.loopEnd = "1m";
+
+let recorder = new Tone.Recorder();
+let recording = false;
 
 let play_btn = document.getElementById("play");
 
@@ -444,6 +449,45 @@ function buildFXChain(fxList, channels=2, bypass=false){
 	}
 }
 
+function recordLoop(){
+	Tone.Transport.stop();
+
+	play_btn.innerText = "--";
+
+	let callback = play_btn.onclick;
+	play_btn.onclick = null;
+
+	Tone.Transport.loop = false;
+	Tone.Transport.scheduleOnce((time) => {
+		startRecording();
+
+	}, 0);
+
+	Tone.Transport.scheduleOnce(() => {
+		stopRecording();
+		Tone.Transport.stop(0);
+		play_btn.onclick = callback;
+    	play_btn.innerText = "play";
+    	Tone.Transport.loop = true;
+	}, "1m");
+
+	Tone.Transport.start();
+}
+
+function startRecording(){
+    console.log("startRecording");
+    recording = true;
+	recorder.start();
+}
+
+async function stopRecording(){
+    console.log("stopRecording");
+    recording = false;
+	const blob = await recorder.stop();
+	const url = URL.createObjectURL(blob);
+
+	download(url, "recording.webm");
+}
 
 function setup(){
     // build DRUM FXs chain and controls
@@ -548,6 +592,7 @@ function setup(){
         drumChain[ins_name][drumChain[ins_name].length - 1].connect(masterChain[0]);
     }
 
+    masterChain[masterChain.length - 1].connect(recorder);
 }
 
 function updateDrumSamples(){
@@ -592,7 +637,6 @@ function updateAudioTimes(){
     	drumPattern[0].start(0);
 	}
 }
-
 
 function nextBar(){
 	// Called at the end of each bar
@@ -660,6 +704,7 @@ window.onload = () => {
            	drawBeatGrid();
         });
     }
+
     document.getElementById("request-sound-pattern").onclick = () => {
         apiCall(id, ROOT_URL, "requestSynthData", {key: "trig"})
         .then(data => {
@@ -671,7 +716,7 @@ window.onload = () => {
 			for(let pattern of data["synth_data"]){
     			const [trig, fns] = pattern;
     			//console.log(pattern);
-    			let sb = new SoundBar(makeSoundRange(trig), fns);
+    			let sb = new SoundBar(makeSoundRange(trig), fns, soundPlayers);
 				soundPattern.push(sb);
 				if(soundPattern.length == 1){
     				soundPattern[0].start(0);
@@ -693,7 +738,7 @@ window.onload = () => {
 			for(let pattern of data["synth_data"]){
     			const [trig, fns] = pattern;
     			//console.log(pattern);
-    			let sb = new SoundBar(makeSoundRange(trig), fns);
+    			let sb = new SoundBar(makeSoundRange(trig), fns, soundPlayers);
 				soundPattern.push(sb);
 				if(soundPattern.length == 1){
     				soundPattern[0].start(0);
@@ -720,6 +765,10 @@ window.onload = () => {
 		Tone.Transport.bpm.value = this.value;
     };
 
+    document.getElementById("download-bar").onclick = () => {
+		recordLoop();
+    }
+
     let drumThresholdKnob = document.getElementById("drum-threshold");
 	drumThresholdKnob.setAttribute("data-src", "src/knob.png");
 	drumThresholdKnob.setAttribute("data-diameter", "50");
@@ -744,7 +793,6 @@ window.onload = () => {
     	console.log(midi);
 
 		download(midi, "drum_pattern.mid");
-
 	}
 
 	Tone.Transport.schedule(nextBar, "0:0:15");
