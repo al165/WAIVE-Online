@@ -8,10 +8,12 @@ const MidiWriter = require("midi-writer-js");
 import AudioRecorder from 'audio-recorder-polyfill';
 window.MediaRecorder = AudioRecorder;
 
-import { createKnob, createSelection, createSwitch, Meter } from './gui.js';
+import { createKnob, createFXKnob, createSelection, createSwitch, Meter } from './gui.js';
 import { download, getSamplePath, apiCall, cleanName, makeSoundRange } from './utils.js';
-import { DrumBar, SoundBar } from './waive_components.js';
+import { BypassableFX, DrumBar, SoundBar, BassBar } from './waive_components.js';
 
+
+const WHITE_KEYS = [0, 2, 4, 5, 7, 9, 11];
 
 console.log(window.location.pathname);
 const ROOT_URL = window.location.pathname;
@@ -35,12 +37,55 @@ const soundgrid = soundcanvas.getContext("2d");
 const soundarrangementcanvas = document.getElementById("soundgrid-arrangement");
 const soundarrangementgrid = soundarrangementcanvas.getContext("2d");
 
+const basscanvas = document.getElementById("bassgrid");
+const bassgrid = basscanvas.getContext("2d");
+
 const id = "test";
 
 let drumPattern = [];
 let soundPattern = [];
 let soundSamples = [];
 let soundPlayers = new Tone.Players({baseUrl: ROOT_URL + "sound/"});
+
+let basslines = [];
+//let bassSynth = new Tone.Synth({
+//    voice0: {
+//        envelope: {attack: 0.0, decay: 0.0},
+//        filter: {type: "lowpass", frequency: 20, Q: 2.0, gain: 1.5},
+//    },
+//    voice1: {
+//        envelope: {attack: 0.0, decay: 0.0},
+//        filter: {type: "lowpass", frequency: 20, Q: 2.0, gain: 1.5},
+//    },
+//    detune: 0,
+//    vibratoAmount: 0.5,
+//    vibratoRate: "16n",
+//});
+
+let bassSynth = new Tone.MonoSynth({
+	"portamento": 0.2,
+	"oscillator":{
+    	"type": "sawtooth",
+	},
+	"envelope":{
+    	"attack": 0.01,
+    	"decay": 0.2,
+    	"sustain": 0.2,
+    	"release": 1.0,
+	},
+	"filterEnvelope":{
+    	"attack": 0.01,
+    	"decay": 0.2,
+    	"sustain": 0.2,
+    	"release": 1.0,
+    	"octaves": 1.0,
+	},
+	"filter":{
+    	"type": "lowpass",
+    	"Q": 1.0,
+	}
+
+})
 
 
 // FX Chains
@@ -50,6 +95,10 @@ const DRUM_FX_CHAIN = [
 
 const SOUND_FX_CHAIN = [
 	'delay', 'reverb', 'phaser', 'autofilter', 'filter', 'vol', 'solo', 'meter',
+]
+
+const BASS_FX_CHAIN = [
+	'vol', 'solo', 'meter',
 ]
 
 const MASTER_FX_CHAIN = [
@@ -87,7 +136,8 @@ const DRUM_MIDI_MAP = {
 
 let drumChain = {};
 let soundChain = [];
-let masterChain = []
+let bassChain = [];
+let masterChain = [];
 let meters = [];
 
 
@@ -202,8 +252,8 @@ function drawSoundGrid(){
  	}
 
 	soundgrid.lineWidth = 4;
+	soundgrid.strokeStyle = "#666";
  	for(let i = 0; i < 2; i++){
-    	soundgrid.strokeStyle = "#666";
     	soundgrid.beginPath();
     	soundgrid.moveTo(0, i*blockHeight-1);
     	soundgrid.lineTo(soundcanvas.width, i*blockHeight-1);
@@ -256,62 +306,41 @@ function drawSoundGrid(){
 	}
 }
 
+function drawBassGrid(){
+	const noteHeight = basscanvas.height/12;
+	const gridWidth = basscanvas.width/16;
 
+	for(let i = 0; i < 12; i++){
+    	if(WHITE_KEYS.indexOf(i) >= 0){
+	    	bassgrid.fillStyle = "#CCC";
+    	} else {
+	    	bassgrid.fillStyle = "#AAA";
+    	}
 
-/* wrapper for effect class / bus
-    https://github.com/Tonejs/Tone.js/issues/187
-*/
-class BypassableFX extends Tone.ToneAudioNode {
-  constructor(fx, bypass=false) {
-    super();
-    this.effect = fx; //new options.effect(options.options); // create effectNode in constructor
-    this._bypass = bypass;
-    this._lastBypass = bypass;
+    	bassgrid.fillRect(0, basscanvas.height - (i+1)*noteHeight, basscanvas.width, noteHeight);
+	}
 
-    // audio signal is constantly passed through this node, 
-    // but processed by effect only, if bypass prop is set to `false` 
-    this.input = new Tone.Gain();
-    this.output = new Tone.Gain();
+	bassgrid.strokeStyle = "#666";
+	for(let i = 1; i < 16; i++){
+    	bassgrid.beginPath();
+    	bassgrid.moveTo(i*gridWidth, 0);
+    	bassgrid.lineTo(i*gridWidth, basscanvas.height);
+    	bassgrid.stroke();
+	}
+	bassgrid.strokeRect(1, 1, basscanvas.width-2, basscanvas.height-2);
 
-    this.effect.connect(this.output);
+	if(!basslines || basslines.length == 0){
+    	return
+	}
 
-    this.activate(!bypass); // initialize input node connection
-  }
-
-  get bypass() {
-    return this._bypass;
-  }
-
-  set bypass(val) {
-    if (this._lastBypass === val) return;
-
-    this._bypass = Boolean(val);
-    this.activate(!val);
-    this._lastBypass = val;
-  }
-  
-  /*
- activate effect (connect input node), if bypass == false
- */
-  activate(doActivate) {
-    if (doActivate) {
-      this.input.disconnect();
-      this.input.connect(this.effect);
-    } else {
-      this.input.disconnect();
-      this.input.connect(this.output);
-    }
-  }
- 
-  toggleBypass() {
-    this.bypass = !this._bypass;
-  }
-
-  dispose() {
-    super.dispose();
-    this.effect.dispose();
-    return this;
-  }
+	bassgrid.fillStyle = "#222";
+	const bassline = basslines[0].notes;
+	for(const note of bassline){
+		const top = basscanvas.height - (note[0]+1)*noteHeight;
+		const start = gridWidth*note[1];
+		const length = gridWidth*note[2];
+		bassgrid.fillRect(start, top, length, noteHeight);
+	}
 }
 
 
@@ -338,59 +367,59 @@ function buildFXChain(fxList, channels=2, bypass=false){
     	switch(fxType){
     		case "delay":
     			fx = new Tone.FeedbackDelay({feedback: 0.0, delayTime: 0.2, wet: 0.5, channels: channels});
-    			fxKnobs.appendChild(createKnob("feedback", {fx: fx, default: 0.0}));
-    			fxKnobs.appendChild(createKnob("delayTime", {fx: fx, default: 0.2}));
+    			fxKnobs.appendChild(createFXKnob("feedback", {fx: fx, default: 0.0}));
+    			fxKnobs.appendChild(createFXKnob("delayTime", {fx: fx, default: 0.2}));
     			break;
     		case "reverb":
     			fx = new Tone.Reverb({wet: 0.7, decay: 1.0, channels: channels});
-    			fxKnobs.appendChild(createKnob("decay", {fx: fx, default: 1.0}));
-    			fxKnobs.appendChild(createKnob("wet", {fx: fx, default: 0.7}));
+    			fxKnobs.appendChild(createFXKnob("decay", {fx: fx, default: 1.0}));
+    			fxKnobs.appendChild(createFXKnob("wet", {fx: fx, default: 0.7}));
     			break;
     		case "compressor":
     			fx = new Tone.Compressor({attack: 0.01, release: 0.1, ratio: 3, threshold: -30, channels: channels});
-    			fxKnobs.appendChild(createKnob("attack", {fx: fx, default: 0.01}));
-    			fxKnobs.appendChild(createKnob("release", {fx: fx, default: 0.1}));
-    			fxKnobs.appendChild(createKnob("ratio", {fx: fx, default: 3, min: 1, max: 10}));
-    			fxKnobs.appendChild(createKnob("threshold", {fx: fx, default: -30, min: -60, max: 0}));
+    			fxKnobs.appendChild(createFXKnob("attack", {fx: fx, default: 0.01}));
+    			fxKnobs.appendChild(createFXKnob("release", {fx: fx, default: 0.1}));
+    			fxKnobs.appendChild(createFXKnob("ratio", {fx: fx, default: 3, min: 1, max: 10}));
+    			fxKnobs.appendChild(createFXKnob("threshold", {fx: fx, default: -30, min: -60, max: 0}));
     			break;
     		case "lowpass":
     			fx = new Tone.Filter({frequency: 200, type: "lowpass", channels: channels});
-    			fxKnobs.appendChild(createKnob("frequency", {fx: fx, default: 20000, min: 40, max: 20000}));
+    			fxKnobs.appendChild(createFXKnob("frequency", {fx: fx, default: 20000, min: 40, max: 20000}));
     			break;
     		case "filter":
     			fx = new Tone.Filter({frequency: 2000, type: "lowpass", Q: 1.0, channels: channels});
     			fxKnobs.appendChild(createSelection("type", ["lowpass", "highpass", "bandpass"], fx));
-    			fxKnobs.appendChild(createKnob("frequency", {fx: fx, default: 2000, min: 40, max: 15000}));
-    			fxKnobs.appendChild(createKnob("Q", {fx: fx, default: 1.0, min: 0, max: 5}));
+    			fxKnobs.appendChild(createFXKnob("frequency", {fx: fx, default: 2000, min: 40, max: 15000}));
+    			fxKnobs.appendChild(createFXKnob("Q", {fx: fx, default: 1.0, min: 0, max: 5}));
     			break;
     		case "autofilter":
 				fx = new Tone.AutoFilter({baseFrequency: 1000, frequency: 2, octaves: 4, depth: 0.5, wet: 0.5, channels: channels});
-    			fxKnobs.appendChild(createKnob("frequency", {fx: fx, default: 2, min: 0.1, max: 20}));
-    			fxKnobs.appendChild(createKnob("depth", {fx: fx, default: 0.5, min: 0.0, max: 1.0}));
-    			fxKnobs.appendChild(createKnob("wet", {fx: fx, default: 0.5, min: 0.0, max: 1.0}));
+    			fxKnobs.appendChild(createFXKnob("frequency", {fx: fx, default: 2, min: 0.1, max: 20}));
+    			fxKnobs.appendChild(createFXKnob("depth", {fx: fx, default: 0.5, min: 0.0, max: 1.0}));
+    			fxKnobs.appendChild(createFXKnob("wet", {fx: fx, default: 0.5, min: 0.0, max: 1.0}));
     			break;
     		case "phaser":
     			fx = new Tone.Phaser({frequency: 15, octaves: 5, baseFrequency: 1000, channels: channels});
-    			fxKnobs.appendChild(createKnob("frequency", {fx: fx, default: 5, min: 0.1, max: 20}));
+    			fxKnobs.appendChild(createFXKnob("frequency", {fx: fx, default: 5, min: 0.1, max: 20}));
     			break;
     		case "eq3":
     			fx = new Tone.EQ3({highFrequency: 2000, lowFrequency: 100, channels: channels});
-    			fxKnobs.appendChild(createKnob("low", {fx: fx, default: 1.0, max: 5.0, min: -24}));
-    			fxKnobs.appendChild(createKnob("mid", {fx: fx, default: 1.0, max: 5.0, min: -24}));
-    			fxKnobs.appendChild(createKnob("high", {fx: fx, default: 1.0, max: 5.0, min: -24}));
+    			fxKnobs.appendChild(createFXKnob("low", {fx: fx, default: 1.0, max: 5.0, min: -24}));
+    			fxKnobs.appendChild(createFXKnob("mid", {fx: fx, default: 1.0, max: 5.0, min: -24}));
+    			fxKnobs.appendChild(createFXKnob("high", {fx: fx, default: 1.0, max: 5.0, min: -24}));
     			break;
     		case "gain":
     			fx = new Tone.Gain({gain: 0.7, channels: channels});
-    			fxKnobs.appendChild(createKnob("gain", {fx: fx, default: 0.7}));
+    			fxKnobs.appendChild(createFXKnob("gain", {fx: fx, default: 0.7}));
     			break;
     		case "limiter":
     			fx = new Tone.Limiter({threshold: -10, channels: channels});
-    			fxKnobs.appendChild(createKnob("threshold", {fx: fx, default: -10, min: -40, max: 0}));
+    			fxKnobs.appendChild(createFXKnob("threshold", {fx: fx, default: -10, min: -40, max: 0}));
     			break;
     		case "vol":
     			fx = new Tone.PanVol({pan: 0, volume: 0, channels: 2});
-    			fxKnobs.appendChild(createKnob("pan", {fx: fx, default: 0, min: -1, max: 1}));
-    			fxKnobs.appendChild(createKnob("volume", {fx: fx, default: 0, min: -40, max: 5}));
+    			fxKnobs.appendChild(createFXKnob("pan", {fx: fx, default: 0, min: -1, max: 1}));
+    			fxKnobs.appendChild(createFXKnob("volume", {fx: fx, default: 0, min: -40, max: 5}));
     			break;
     		case "solo":
     			fx = new Tone.Solo();
@@ -568,6 +597,94 @@ function setup(){
     }
 
 
+    // build BASS Synth Controls
+	const synthBox = document.createElement("div");
+	const synthName = document.createElement("span");
+	synthName.innerText = "Simple Bass Synth";
+	synthName.classList.add("fx-name");
+	const synthColor = "hsl(" + 0 + ", 50%, 50%)";
+	synthName.style.backgroundColor = synthColor;
+	synthBox.classList.add("fx-box");
+	synthBox.appendChild(synthName);
+	let synthKnobs = document.createElement("div");
+	synthKnobs.classList.add("fx-knobs");
+	synthBox.appendChild(synthKnobs);
+	document.getElementById("bass-controls").appendChild(synthBox);
+
+	// vibrato
+	//let { knobContainer, knob } = createKnob("vibrato", {default: 0.0});
+	//knob.oninput = function(){
+	//	bassSynth.set({vibratoAmount: this.value});
+	//}
+	//synthKnobs.appendChild(knobContainer);
+
+	// Amp Env
+	let { knobContainer, knob } = createKnob("attack", {default: 0.0});
+	knob.oninput = function(){
+		bassSynth.envelope.attack = this.value;
+	}
+	synthKnobs.appendChild(knobContainer);
+	({ knobContainer, knob } = createKnob("decay", {default: 0.2}));
+	knob.oninput = function(){
+		bassSynth.envelope.decay= this.value;
+	}
+	synthKnobs.appendChild(knobContainer);
+	({ knobContainer, knob } = createKnob("sustain", {default: 0.8}));
+	knob.oninput = function(){
+		bassSynth.envelope.sustain= this.value;
+	}
+	synthKnobs.appendChild(knobContainer);
+	({ knobContainer, knob } = createKnob("release", {default: 1.0}));
+	knob.oninput = function(){
+		bassSynth.envelope.release= this.value;
+	}
+	synthKnobs.appendChild(knobContainer);
+
+	// Portmento
+	({ knobContainer, knob } = createKnob("portamento", {default: 1.0}));
+	knob.oninput = function(){
+		bassSynth.portamento= this.value;
+	}
+	synthKnobs.appendChild(knobContainer);
+
+	// filter
+	let params = {default: 1.0, min: 1.0, max: 4.0};
+	({ knobContainer, knob } = createKnob("octaves", params));
+	knob.oninput = function(){
+    	let val = this.value * (params.max - params.min) + params.min;
+    	bassSynth.filterEnvelope.octaves = val;
+	}
+	synthKnobs.appendChild(knobContainer);
+	params = {default: 1.0, min: 0.2, max: 10.0};
+	({ knobContainer, knob } = createKnob("Q", params));
+	knob.oninput = function(){
+    	let val = this.value * (params.max - params.min) + params.min;
+    	bassSynth.set({filter: {Q: val}});
+	}
+	synthKnobs.appendChild(knobContainer);
+
+	//({ knobContainer, knob } = createKnob("attack", {default: 0.0}));
+	//knob.oninput = function(){
+	//	bassSynth.filterEnvelope.attack = this.value;
+	//}
+	//synthKnobs.appendChild(knobContainer);
+	//({ knobContainer, knob } = createKnob("decay", {default: 0.2}));
+	//knob.oninput = function(){
+	//	bassSynth.filterEnvelope.decay= this.value;
+	//}
+	//synthKnobs.appendChild(knobContainer);
+	//({ knobContainer, knob } = createKnob("sustain", {default: 0.8}));
+	//knob.oninput = function(){
+	//	bassSynth.filterEnvelope.sustain= this.value;
+	//}
+	//synthKnobs.appendChild(knobContainer);
+	//({ knobContainer, knob } = createKnob("release", {default: 1.0}));
+	//knob.oninput = function(){
+	//	bassSynth.filterEnvelope.release= this.value;
+	//}
+	//synthKnobs.appendChild(knobContainer);
+
+
     // build SYNTH FXs chain
 	let { chain, container } = buildFXChain(SOUND_FX_CHAIN);
 	const soundChannel = document.createElement("div");
@@ -579,6 +696,16 @@ function setup(){
 	soundPlayers.connect(soundChain[0]);
 
 
+	// build BASS FXs chain
+	({ chain, container } = buildFXChain(BASS_FX_CHAIN));
+	const bassChannel = document.createElement("div");
+	//bassChannel.classList.add("ins-channel");
+	bassChannel.appendChild(container);
+	document.getElementById("bass-controls").appendChild(bassChannel);
+	bassChain = chain;
+	bassSynth.connect(bassChain[0]);
+
+
     // build MASTER FXs chain
     ({ chain, container } = buildFXChain(MASTER_FX_CHAIN, 2, true));
 	const masterChannel = document.createElement("div");
@@ -588,6 +715,7 @@ function setup(){
     masterChain = chain;
     masterChain[masterChain.length - 1].toDestination();
     soundChain[soundChain.length - 1].connect(masterChain[0]);
+    bassChain[bassChain.length - 1].connect(masterChain[0]);
     for(let ins_name in DRUMCOLORS){
         drumChain[ins_name][drumChain[ins_name].length - 1].connect(masterChain[0]);
     }
@@ -654,6 +782,13 @@ function nextBar(){
 		soundPattern.shift();
 		soundPattern[0].start(0);
 		drawSoundGrid();
+	}
+
+	if(basslines && basslines.length > 1){
+		basslines[0].end();
+		basslines.shift();
+		basslines[0].start(0);
+		drawBassGrid();
 	}
 
 	updateDrumSamples();
@@ -749,6 +884,27 @@ window.onload = () => {
         });
     }
 
+    document.getElementById("request-bassline").onclick = () => {
+        apiCall(id, ROOT_URL, "requestBassline", {})
+        .then(data => {
+            if(!data || !data["ok"]){
+				console.log("no bassline data");
+				return
+            }
+
+            //basslines = data["bassline"];
+
+            for(let bassline of data["bassline"]){
+                const bb = new BassBar(bassline, bassSynth);
+                basslines.push(bb);
+                if(basslines.length == 1){
+					basslines[0].start(0);
+                }
+            }
+            drawBassGrid();
+        })
+    }
+
     play_btn.onclick = () => {
         Tone.start();
         if(Tone.Transport.state == "started"){
@@ -800,4 +956,5 @@ window.onload = () => {
 	setup();
     drawBeatGrid();
     drawSoundGrid();
+    drawBassGrid();
 }

@@ -7,6 +7,7 @@ export function getDefault(props, name, def){
     }
 }
 
+
 export function createKnob(name, params={}){
 	let knobContainer = document.createElement("div");
 	knobContainer.classList.add("fx-knob");
@@ -34,12 +35,17 @@ export function createKnob(name, params={}){
 	label.innerText = name;
 	knobContainer.appendChild(label);
 
+	return { knobContainer, knob }
+}
+
+export function createFXKnob(name, params={}){
+	let { knobContainer, knob } = createKnob(name, params);
+
 	if(params["fx"]){
 		knob.oninput = function(){
     		let _min = getDefault(params, "min", 0.0);
     		let _max = getDefault(params, "max", 1.0);
     		let val = this.value * (_max - _min) + _min;
-    		//console.log(name + " " + val);
     		let newValue = {};
     		newValue[name] = val;
 			params["fx"].set(newValue);

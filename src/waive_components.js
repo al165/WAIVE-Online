@@ -4,6 +4,64 @@ import { getSamplePath } from './utils.js';
 const STOPPED = 0;
 const STARTED = 1;
 
+
+/* wrapper for effect class / bus
+    https://github.com/Tonejs/Tone.js/issues/187
+*/
+export class BypassableFX extends Tone.ToneAudioNode {
+  constructor(fx, bypass=false) {
+    super();
+    this.effect = fx; //new options.effect(options.options); // create effectNode in constructor
+    this._bypass = bypass;
+    this._lastBypass = bypass;
+
+    // audio signal is constantly passed through this node, 
+    // but processed by effect only, if bypass prop is set to `false` 
+    this.input = new Tone.Gain();
+    this.output = new Tone.Gain();
+
+    this.effect.connect(this.output);
+
+    this.activate(!bypass); // initialize input node connection
+  }
+
+  get bypass() {
+    return this._bypass;
+  }
+
+  set bypass(val) {
+    if (this._lastBypass === val) return;
+
+    this._bypass = Boolean(val);
+    this.activate(!val);
+    this._lastBypass = val;
+  }
+  
+  /*
+ activate effect (connect input node), if bypass == false
+ */
+  activate(doActivate) {
+    if (doActivate) {
+      this.input.disconnect();
+      this.input.connect(this.effect);
+    } else {
+      this.input.disconnect();
+      this.input.connect(this.output);
+    }
+  }
+ 
+  toggleBypass() {
+    this.bypass = !this._bypass;
+  }
+
+  dispose() {
+    super.dispose();
+    this.effect.dispose();
+    return this;
+  }
+}
+
+
 export class DrumBar {
 
 	constructor(beat_grid, threshold, ins_names, drum_buffers, drum_players, drum_velocity) {
@@ -148,6 +206,46 @@ export class SoundBar {
     			this.sound_players.player(val.fn).start(time, 0, val.length)
     		}
 		}, timings)
+	}
+
+	start(time=0){
+		this.state = STARTED;
+		this.part.start(time);
+	}
+
+	stop(){
+    	this.state = STOPPED;
+    	this.part.stop();
+	}
+
+	end(){
+		this.stop();
+		this.part.dispose();
+	}
+}
+
+export class BassBar {
+	constructor(notes, synth){
+    	this.notes = notes;
+    	this.synth = synth;
+
+    	let timings = [];
+    	for(let note of notes){
+        	const pitch = note[0] + 24;
+			const start = note[1];
+			const length = note[2];
+			const velocity = note[3];
+
+			const time = start*48 + "i";
+			const duration = length*48 + "i"; // maybe add a little extra to make portmanto effect??
+			const frequency = Tone.Frequency(pitch, "midi").toFrequency();
+
+			timings.push({time: time, frequency: frequency, length: duration, velocity: velocity});
+    	}
+
+    	this.part = new Tone.Part((time, val) => {
+        	this.synth.triggerAttackRelease(val.frequency, val.length, time);
+    	}, timings)
 	}
 
 	start(time=0){

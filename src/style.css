@@ -48,6 +48,10 @@ p {
 	justify-content: center;
 }
 
+.spacer {
+    flex-grow: 2;
+}
+
 .controls {
 	display: flex;
 	flex-direction: row;
