@@ -11,37 +11,46 @@
 		<p>Welcome to the prototype browser-based interface to WAIVE: the AI that generates dance music from archieved sound materials.</p>
 		<p><i>This is an early WIP and may break/change at anytime.</i></p>
 
-		<div id="drum-machine">
+		<div id="waive">
     		<div class="row">
                 <div id="play" class="btn">play</div>
                 <input type="number" min="60" max="200" id="bpm" value="110">
                 <div id="download-bar" class="btn">download loop</div>
     		</div>
+
+			<!--  ==== DRUM MACHINE ====  -->
     		<div class="row"><h2>Drum Machine</h2></div>
     	    <div class="play-area">
-                <canvas width="800" height="306" id="beatgrid"></canvas>
+        		<div id="drum-arrangement" class="arrangement-view"></div>
             	<div class="p-bar"></div>
         	</div>
-            <div id="drum-channels">
-            </div>
-            <canvas width="800" height="60" id="beatgrid-arrangement"></canvas>
+            <div id="drum-channels"></div>
+    		<div class="bar-pool" id="drum-pool"></div>
     		<div class="controls">
-                <div id="request-grid" class="btn">new drum patterns</div>
                 <input type="range" class="input-knob" id="drum-threshold" data-diameter="40" min="0" max="1" step="0.01" data-bgcolor="#444" data-fgcolor="#BBB"/>
-                <div id="drum-midi-download" class="btn" target="_blank" download="drum_pattern.mid">⤓</div>
+                <div id="request-new-grid" class="btn">new</div>
+                <div id="request-variation-grid" class="btn">variation</div>
+                <div id="drum-midi-download" class="btn" target="_blank" download="drum_pattern.mid">⤓ drum arrangement</div>
     		</div>
 
-    		<div class="row"><h2>Bass Machine</h2></div>
+			<!--  ==== BASS ====  -->
+    		<div class="row"><h2>Bass Synth</h2></div>
     		<div class="play-area">
-                <canvas width="800" height="102" id="bassgrid"></canvas>
+        		<div id="bass-arrangement" class="arrangement-view"></div>
             	<div class="p-bar"></div>
     		</div>
-    		<div class="controls ins-channel" id="bass-controls">
-                <div id="request-bassline" class="btn">new bassline</div>
-                <div id="bassline-midi-download" class="btn" target="_blank" download="bassline.mid">⤓</div>
+    		<div class="ins-channel" id="bass-controls">
                 <div class="spacer"></div>
     		</div>
+    		<div class="bar-pool" id="bass-pool">
+    		</div>
+    		<div class="controls">
+                <div id="request-new-bassline" class="btn">new</div>
+                <div id="request-variation-bassline" class="btn">variation</div>
+                <div id="bassline-midi-download" class="btn" target="_blank" download="bassline.mid">⤓ arrangement</div>
+    		</div>
 
+			<!--  ==== SAMPLER ====  -->
     		<div class="row"><h2>Sampler</h2></div>
     		<div class="play-area">
     			<canvas width="800" height="102" id="soundgrid"></canvas>

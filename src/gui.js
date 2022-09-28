@@ -121,6 +121,22 @@ export class Meter{
 }
 
 
+export function createBarElement(name="bar", hue=0){
+	const barElement = document.createElement("div");
+	barElement.classList.add("bar");
+	const barName = document.createElement("span");
+	barName.classList.add("bar-title");
+	barName.innerText = name;
+	barName.style.backgroundColor = "hsl(" + hue + ", 50%, 50%)";
+	barElement.appendChild(barName);
+
+	const barCanvas = document.createElement("canvas");
+	barCanvas.classList.add("bar-preview");
+	barElement.appendChild(barCanvas);
+
+	return {barElement, barCanvas};
+}
+
 
 
 

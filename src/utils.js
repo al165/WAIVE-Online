@@ -29,6 +29,7 @@ export function cleanName(name){
 }
 
 export function apiCall(id, root, m_type, data) {
+    // Uses get requests!
     if(!data){
         data = {};
     }
@@ -50,6 +51,37 @@ export function apiCall(id, root, m_type, data) {
 	})
 	.catch(error => console.log(error));
 }
+
+
+export function apiPostCall(id, root, m_type, data) {
+	const headers = {
+    	method: "POST",
+    	headers: {
+        	'Accept': 'application/json',
+        	'Content-Type': 'application/json',
+    	},
+    	body: {
+        	"type": m_type,
+        	"id": id,
+        	"data": data
+    	}
+	}
+
+	return fetch(`${root}apipost/`, headers)
+	.then(response => {
+    	if(!response.ok){
+        	console.log("failed request");
+        	console.log(headers);
+        	console.log(response.status);
+    	}
+    	return response.json();
+	})
+	.then(data => {
+    	return data;
+	})
+	.catch(error => console.log(error));
+}
+
 
 export function makeSoundRange(trig){
 	let result = [];

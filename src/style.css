@@ -12,7 +12,22 @@ h1 {
 	font-size: 28pt;
 }
 
-#drum-machine h2 {
+#waive {
+    position: relative;
+    left: 50%;
+    transform: translateX(-50%) scale(0.85);
+	width: fit-content;
+	display: grid;
+	grid-template-columns: auto auto;
+	justify-content: flex-start;
+	background-color: #CCC;
+	border: solid 1px black;
+	filter: drop-shadow(5px 5px 16px gray);
+	border-radius: 16px;
+	padding: 10px;
+}
+
+#waive h2 {
 	font-family: monospace;
 	padding-left: 2em;
 	width: 100%;
@@ -28,7 +43,10 @@ p {
 
 .play-area {
     position: relative;
+    border: 1px #AAA solid;
+    width: 800px;
 }
+
 
 .p-bar {
 	position: absolute;
@@ -46,6 +64,52 @@ p {
 	flex-direction: row;
 	align-items: center;
 	justify-content: center;
+}
+
+.bar-pool {
+    overflow: scroll;
+    width: 100%;
+    display: flex;
+    flex-direction: row;
+    border-radius: 4px;
+    background-color: #AAA;
+}
+
+.bar {
+    min-width: 98px;
+    margin: 1px;
+    border: 1px black solid;
+    cursor: pointer;
+    border-radius: 4px;
+    display: flex;
+    flex-direction: column;
+}
+
+.bar:hover {
+    border: 1px #F80 solid;
+}
+
+.bar-preview {
+    width: 98px;
+    height: 100%;
+}
+
+.bar-arrangement {
+    width: 198px;
+    position: absolute;
+    height: calc(100% - 4px);
+    margin: 2px 0px;
+    border: 1px black solid;
+    cursor: not-allowed;
+}
+
+.bar-arrangement:hover {
+    border: 1px #F80 solid;
+}
+
+.arrangementView {
+    width: 800px;
+    height: 100%;
 }
 
 .spacer {
@@ -130,7 +194,7 @@ p {
 	margin: 2px 2px;
 }
 
-.fx-name, .fx-parameter {
+.fx-name, .fx-parameter, .bar-title {
 	font-family: monospace;
 	font-size: 10px;
 	width: 100%;
@@ -182,22 +246,6 @@ select {
 	font-family: monospace;
 	color: #444;
 	font-size: 8pt;
-}
-
-
-#drum-machine {
-    position: relative;
-    left: 50%;
-    transform: translateX(-50%) scale(0.85);
-	width: fit-content;
-	display: grid;
-	grid-template-columns: auto auto;
-	justify-content: flex-start;
-	background-color: #CCC;
-	border: solid 1px black;
-	filter: drop-shadow(5px 5px 16px gray);
-	border-radius: 16px;
-	padding: 10px;
 }
 
 #drum-channels {

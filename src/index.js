@@ -8,59 +8,59 @@ const MidiWriter = require("midi-writer-js");
 import AudioRecorder from 'audio-recorder-polyfill';
 window.MediaRecorder = AudioRecorder;
 
-import { createKnob, createFXKnob, createSelection, createSwitch, Meter } from './gui.js';
-import { download, getSamplePath, apiCall, cleanName, makeSoundRange } from './utils.js';
-import { BypassableFX, DrumBar, SoundBar, BassBar } from './waive_components.js';
+import { createKnob, createFXKnob, createSelection, createSwitch, Meter, createBarElement } from './gui.js';
+import { download, getSamplePath, apiCall, apiPostCall, cleanName, makeSoundRange } from './utils.js';
+import { BypassableFX, DrumBar, SoundBar, BassBar, DrumArrangement, BassArrangement } from './waive_components.js';
 
 
-const WHITE_KEYS = [0, 2, 4, 5, 7, 9, 11];
 
 console.log(window.location.pathname);
 const ROOT_URL = window.location.pathname;
 
 Tone.Transport.bpm.value = 110;
 Tone.Transport.loop = true;
-Tone.Transport.loopEnd = "1m";
+Tone.Transport.loopEnd = "4m";
 
 let recorder = new Tone.Recorder();
 let recording = false;
 
 let play_btn = document.getElementById("play");
 
-const beatcanvas = document.getElementById("beatgrid");
-const beatgrid = beatcanvas.getContext("2d");
-const beatarrangementcanvas = document.getElementById("beatgrid-arrangement");
-const beatarrangementgrid = beatarrangementcanvas.getContext("2d");
-
 const soundcanvas = document.getElementById("soundgrid");
 const soundgrid = soundcanvas.getContext("2d");
 const soundarrangementcanvas = document.getElementById("soundgrid-arrangement");
 const soundarrangementgrid = soundarrangementcanvas.getContext("2d");
 
-const basscanvas = document.getElementById("bassgrid");
-const bassgrid = basscanvas.getContext("2d");
-
 const id = "test";
 
-let drumPattern = [];
 let soundPattern = [];
 let soundSamples = [];
 let soundPlayers = new Tone.Players({baseUrl: ROOT_URL + "sound/"});
 
-let basslines = [];
-//let bassSynth = new Tone.Synth({
-//    voice0: {
-//        envelope: {attack: 0.0, decay: 0.0},
-//        filter: {type: "lowpass", frequency: 20, Q: 2.0, gain: 1.5},
-//    },
-//    voice1: {
-//        envelope: {attack: 0.0, decay: 0.0},
-//        filter: {type: "lowpass", frequency: 20, Q: 2.0, gain: 1.5},
-//    },
-//    detune: 0,
-//    vibratoAmount: 0.5,
-//    vibratoRate: "16n",
-//});
+let drumArrangement = new DrumArrangement();
+let threshold = 0.2;
+drumArrangement.threshold = threshold;
+const drumSampleToLoad = {};
+const drumBuffers = {};
+const drumPlayers = {};
+const drumPlayersVelocity = {};
+const drumSampleLabels = {};
+const drumSampleURL = {};
+drumArrangement.synthCallback = (note, length, velocity, time) => {
+    const ins_name = DRUM_MIDI_NAME[note];
+	if(drumBuffers[ins_name] && drumBuffers[ins_name].loaded){
+		drumPlayers[ins_name].start(time, 0, "16t");
+		drumPlayersVelocity[ins_name].gain.setValueAtTime(velocity, time);
+	}
+}
+
+let drumPool = [];
+let selectedDrumBar = null;
+//let drumSampler = new Tone.Sampler({baseUrl: ROOT_URL})
+
+let bassArrangement = new BassArrangement();
+let bassPool = [];
+let selectedBassBar = null;
 
 let bassSynth = new Tone.MonoSynth({
 	"portamento": 0.2,
@@ -85,7 +85,11 @@ let bassSynth = new Tone.MonoSynth({
     	"Q": 1.0,
 	}
 
-})
+});
+
+bassArrangement.synthCallback = (frequency, length, time) => {
+    bassSynth.triggerAttackRelease(frequency, length, time);
+};
 
 
 // FX Chains
@@ -107,22 +111,19 @@ const MASTER_FX_CHAIN = [
 
 const NON_BYPASSABLE = ['meter', 'vol', 'solo', 'gain'];
 
-let threshold = 0.2;
-
-const drumSampleToLoad = {};
-const drumBuffers = {};
-const drumPlayers = {};
-const drumPlayersVelocity = {};
-const drumSampleLabels = {};
-const drumSampleURL = {};
-
 const DRUMCOLORS = {
 	"00_KD": "#F44",
 	"01_SD": "#FA4",
 	"02_HH": "#FF8",
 }
 
-const INS_NAMES = {
+const DRUM_NAMES = {
+	"00_KD": "kick",
+	"01_SD": "snare",
+	"02_HH": "hat",
+}
+
+const DRUM_KEYS = {
 	0: "00_KD",
 	1: "01_SD",
 	2: "02_HH",
@@ -131,7 +132,13 @@ const INS_NAMES = {
 const DRUM_MIDI_MAP = {
 	"00_KD": 36,
 	"01_SD": 38,
-	"02_HH": 42
+	"02_HH": 42,
+}
+
+const DRUM_MIDI_NAME = {
+	36: "00_KD",
+	38: "01_SD",
+	42: "02_HH",
 }
 
 let drumChain = {};
@@ -180,7 +187,7 @@ function drawBeatGrid() {
 	let beat_grid = beat.beat_grid;
 
 	for(let i = 0; i < 3; i++){
-    	const ins_name = INS_NAMES[i];
+    	const ins_name = DRUM_KEYS[i];
 		beatgrid.fillStyle = DRUMCOLORS[ins_name];
 		beatgrid.strokeStyle = DRUMCOLORS[ins_name];
 
@@ -214,7 +221,7 @@ function drawBeatGrid() {
 		beatarrangementgrid.fillText(k+1, k*barwidth + 3, 3);
 
 		for(let i = 0; i < 3; i++){
-    		beatarrangementgrid.fillStyle = DRUMCOLORS[INS_NAMES[i]];
+    		beatarrangementgrid.fillStyle = DRUMCOLORS[DRUM_KEYS[i]];
     		for(let j = 0; j < 16; j++){
         		if(beat_grid[i][j] < threshold){
             		continue
@@ -242,7 +249,7 @@ function drawSoundGrid(){
  	for(let j = 0; j < 16; j++){
      	if(j%8 == 0){
 			soundgrid.fillStyle = "#AAA";
-			soundgrid.fillRect(j*blockWidth, 0, 4*blockWidth, beatcanvas.height);
+			soundgrid.fillRect(j*blockWidth, 0, 4*blockWidth, soundcanvas.height);
      	}
     	soundgrid.strokeStyle = "#666";
     	soundgrid.beginPath();
@@ -305,44 +312,6 @@ function drawSoundGrid(){
     	}
 	}
 }
-
-function drawBassGrid(){
-	const noteHeight = basscanvas.height/12;
-	const gridWidth = basscanvas.width/16;
-
-	for(let i = 0; i < 12; i++){
-    	if(WHITE_KEYS.indexOf(i) >= 0){
-	    	bassgrid.fillStyle = "#CCC";
-    	} else {
-	    	bassgrid.fillStyle = "#AAA";
-    	}
-
-    	bassgrid.fillRect(0, basscanvas.height - (i+1)*noteHeight, basscanvas.width, noteHeight);
-	}
-
-	bassgrid.strokeStyle = "#666";
-	for(let i = 1; i < 16; i++){
-    	bassgrid.beginPath();
-    	bassgrid.moveTo(i*gridWidth, 0);
-    	bassgrid.lineTo(i*gridWidth, basscanvas.height);
-    	bassgrid.stroke();
-	}
-	bassgrid.strokeRect(1, 1, basscanvas.width-2, basscanvas.height-2);
-
-	if(!basslines || basslines.length == 0){
-    	return
-	}
-
-	bassgrid.fillStyle = "#222";
-	const bassline = basslines[0].notes;
-	for(const note of bassline){
-		const top = basscanvas.height - (note[0]+1)*noteHeight;
-		const start = gridWidth*note[1];
-		const length = gridWidth*note[2];
-		bassgrid.fillRect(start, top, length, noteHeight);
-	}
-}
-
 
 function buildFXChain(fxList, channels=2, bypass=false){
 	let chain = [];
@@ -611,13 +580,6 @@ function setup(){
 	synthBox.appendChild(synthKnobs);
 	document.getElementById("bass-controls").appendChild(synthBox);
 
-	// vibrato
-	//let { knobContainer, knob } = createKnob("vibrato", {default: 0.0});
-	//knob.oninput = function(){
-	//	bassSynth.set({vibratoAmount: this.value});
-	//}
-	//synthKnobs.appendChild(knobContainer);
-
 	// Amp Env
 	let { knobContainer, knob } = createKnob("attack", {default: 0.0});
 	knob.oninput = function(){
@@ -663,28 +625,6 @@ function setup(){
 	}
 	synthKnobs.appendChild(knobContainer);
 
-	//({ knobContainer, knob } = createKnob("attack", {default: 0.0}));
-	//knob.oninput = function(){
-	//	bassSynth.filterEnvelope.attack = this.value;
-	//}
-	//synthKnobs.appendChild(knobContainer);
-	//({ knobContainer, knob } = createKnob("decay", {default: 0.2}));
-	//knob.oninput = function(){
-	//	bassSynth.filterEnvelope.decay= this.value;
-	//}
-	//synthKnobs.appendChild(knobContainer);
-	//({ knobContainer, knob } = createKnob("sustain", {default: 0.8}));
-	//knob.oninput = function(){
-	//	bassSynth.filterEnvelope.sustain= this.value;
-	//}
-	//synthKnobs.appendChild(knobContainer);
-	//({ knobContainer, knob } = createKnob("release", {default: 1.0}));
-	//knob.oninput = function(){
-	//	bassSynth.filterEnvelope.release= this.value;
-	//}
-	//synthKnobs.appendChild(knobContainer);
-
-
     // build SYNTH FXs chain
 	let { chain, container } = buildFXChain(SOUND_FX_CHAIN);
 	const soundChannel = document.createElement("div");
@@ -692,7 +632,6 @@ function setup(){
 	soundChannel.appendChild(container);
 	document.getElementById("sound-controls").appendChild(soundChannel);
 	soundChain = chain;
-	//chain[chain.length - 1].toDestination();
 	soundPlayers.connect(soundChain[0]);
 
 
@@ -766,29 +705,26 @@ function updateAudioTimes(){
 	}
 }
 
+function updateBassTimes(){
+
+}
+
 function nextBar(){
 	// Called at the end of each bar
 	// update current measures
 
-	if(drumPattern && drumPattern.length > 1){
-    	drumPattern[0].end();
-		drumPattern.shift();
-		drumPattern[0].start(0);
-		drawBeatGrid();
-	}
+	//if(drumPattern && drumPattern.length > 1){
+    //	drumPattern[0].end();
+	//	drumPattern.shift();
+	//	drumPattern[0].start(0);
+	//	drawBeatGrid();
+	//}
 
 	if(soundPattern && soundPattern.length > 1){
     	soundPattern[0].end();
 		soundPattern.shift();
 		soundPattern[0].start(0);
 		drawSoundGrid();
-	}
-
-	if(basslines && basslines.length > 1){
-		basslines[0].end();
-		basslines.shift();
-		basslines[0].start(0);
-		drawBassGrid();
 	}
 
 	updateDrumSamples();
@@ -798,6 +734,93 @@ function nextBar(){
         	//console.log(`${ins_name} ${drumSampleToLoad[ins_name]}`);
     	}
 	}
+}
+
+function selectBar(slot, pool, bar){
+	for(const b of pool){
+    	b.element.style.borderColor = "black";
+	}
+	bar.element.style.borderColor = "white";
+	slot = bar;
+}
+
+function addBar(arrangement, arrangementView, bar){
+    arrangement.add(bar);
+    arrangement.start(0);
+	drawArrangementView(arrangement, arrangementView);
+}
+
+function removeBar(i, arrangement, arrangementView){
+    arrangement.remove(i);
+    arrangement.start(0);
+	drawArrangementView(arrangement, arrangementView);
+}
+
+function drawArrangementView(arrangement, arrangementView){
+    while(arrangementView.hasChildNodes()){
+        arrangementView.removeChild(arrangementView.firstChild);
+    }
+    for(let i = 0; i < arrangement.length; i++){
+        const bar = arrangement.at(i);
+        if(!bar){
+            continue
+        }
+        const barCanvas = document.createElement("canvas");
+        barCanvas.classList.add("bar-arrangement");
+        barCanvas.style.left = i*200 + "px";
+        arrangementView.appendChild(barCanvas);
+        bar.renderToCanvas(barCanvas, true);
+
+        barCanvas.onclick = () => {
+            removeBar(i, arrangement, arrangementView);
+        }
+    }
+}
+
+function recievedNewBassBar(data){
+	const bassline = data["bassline"][0];
+	const z = data["z"];
+	const bb = new BassBar(bassline);
+	bb.z = z;
+	const {barElement, barCanvas} = createBarElement("bass", bb.hue);
+	bb.element = barElement;
+	bb.element.onclick = () => {
+		selectBar(selectedBassBar, bassPool, bb);
+	}
+	bb.element.ondblclick = () => {
+		addBar(bassArrangement, document.getElementById("bass-arrangement"), bb);
+	}
+	bassPool.push(bb);
+	document.getElementById("bass-pool").appendChild(bb.element);
+	bb.element.click();
+
+	if(bassArrangement.isEmpty()){
+		addBar(bassArrangement, document.getElementById("bass-arrangement"), bb);
+	}
+
+	bb.renderToCanvas(barCanvas);
+}
+
+function recievedNewDrumBar(data){
+    const beat_grid = data["beat_grid"];
+    const z = data["z"];
+    const db = new DrumBar(beat_grid);
+    db.z = z;
+    const {barElement, barCanvas} = createBarElement("drum", db.hue);
+    db.element = barElement;
+    db.element.onclick = () => {
+        selectBar(selectedDrumBar, drumPool, db);
+    }
+	db.element.ondblclick = () => {
+		addBar(drumArrangement, document.getElementById("drum-arrangement"), db);
+	}
+    drumPool.push(db);
+    document.getElementById("drum-pool").appendChild(db.element);
+    db.element.click();
+    if(drumArrangement.isEmpty()){
+        addBar(drumArrangement, document.getElementById("drum-arrangement"), db);
+    }
+    db.renderToCanvas(barCanvas, db);
 }
 
 window.onload = () => {
@@ -820,7 +843,7 @@ window.onload = () => {
     }, 1000/60);
 
     // Setup controls
-    document.getElementById("request-grid").onclick = () => {
+    document.getElementById("request-new-grid").onclick = () => {
         apiCall(id, ROOT_URL, "requestDrumPattern")
         .then(data => {
             if(!data || !data["ok"]){
@@ -828,15 +851,17 @@ window.onload = () => {
             	return
             }
 
-			for(let beat_grid of data["beat_grid"]){
-				let db = new DrumBar(beat_grid, threshold, INS_NAMES, drumBuffers, drumPlayers, drumPlayersVelocity);
-				drumPattern.push(db);
-				if(drumPattern.length == 1){
-					drumPattern[0].start(0);
-				}
-			}
+            recievedNewDrumBar(data);
 
-           	drawBeatGrid();
+			//for(let beat_grid of data["beat_grid"]){
+			//	let db = new DrumBar(beat_grid, threshold, DRUM_KEYS, drumBuffers, drumPlayers, drumPlayersVelocity);
+			//	drumPattern.push(db);
+			//	if(drumPattern.length == 1){
+			//		drumPattern[0].start(0);
+			//	}
+			//}
+
+           	//drawBeatGrid();
         });
     }
 
@@ -884,7 +909,7 @@ window.onload = () => {
         });
     }
 
-    document.getElementById("request-bassline").onclick = () => {
+    document.getElementById("request-new-bassline").onclick = () => {
         apiCall(id, ROOT_URL, "requestBassline", {})
         .then(data => {
             if(!data || !data["ok"]){
@@ -892,17 +917,27 @@ window.onload = () => {
 				return
             }
 
-            //basslines = data["bassline"];
-
-            for(let bassline of data["bassline"]){
-                const bb = new BassBar(bassline, bassSynth);
-                basslines.push(bb);
-                if(basslines.length == 1){
-					basslines[0].start(0);
-                }
-            }
-            drawBassGrid();
+			recievedNewBassBar(data);
         })
+    }
+
+    document.getElementById("request-variation-bassline").onclick = () => {
+        if(!selectedBassBar || !selectedBassBar.z){
+            console.log("not sending POST request (can not make variation)");
+            return
+        }
+
+        apiPostCall(id, ROOT_URL, "requestBasslineVariation", {
+            z: selectedBassBar.z
+        })
+    	.then(data => {
+            if(!data || !data["ok"]){
+				console.log("no bassline data");
+				return
+            }
+
+			recievedNewBassBar(data);
+    	})
     }
 
     play_btn.onclick = () => {
@@ -935,9 +970,9 @@ window.onload = () => {
 
     drumThresholdKnob.value = threshold;
     drumThresholdKnob.oninput = function(){
-    	threshold = this.value;
-       	updateAudioTimes();
-    	drawBeatGrid();
+        drumArrangement.threshold = this.value;
+        drumArrangement.updatePart();
+        drawArrangementView(drumArrangement, document.getElementById("drum-arrangement"));
     }
 
 	const drumMidiDownload = document.getElementById("drum-midi-download");
@@ -954,7 +989,5 @@ window.onload = () => {
 	Tone.Transport.schedule(nextBar, "0:0:15");
 
 	setup();
-    drawBeatGrid();
     drawSoundGrid();
-    drawBassGrid();
 }
