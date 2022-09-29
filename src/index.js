@@ -10,7 +10,7 @@ window.MediaRecorder = AudioRecorder;
 
 import { createKnob, createFXKnob, createSelection, createSwitch, Meter, createBarElement } from './gui.js';
 import { download, getSamplePath, apiCall, apiPostCall, cleanName, makeSoundRange } from './utils.js';
-import { BypassableFX, DrumBar, SoundBar, BassBar, DrumArrangement, BassArrangement } from './waive_components.js';
+import { BypassableFX, DrumBar, SoundBar, BassBar, DrumArrangement, BassArrangement, SoundArrangement } from './waive_components.js';
 
 console.log(window.location.pathname);
 const ROOT_URL = window.location.pathname;
@@ -24,16 +24,7 @@ let recording = false;
 
 let play_btn = document.getElementById("play");
 
-const soundcanvas = document.getElementById("soundgrid");
-const soundgrid = soundcanvas.getContext("2d");
-const soundarrangementcanvas = document.getElementById("soundgrid-arrangement");
-const soundarrangementgrid = soundarrangementcanvas.getContext("2d");
-
 const id = "test";
-
-let soundPattern = [];
-let soundSamples = [];
-let soundPlayers = new Tone.Players({baseUrl: ROOT_URL + "sound/"});
 
 let drumArrangement = new DrumArrangement();
 let threshold = 0.2;
@@ -44,6 +35,7 @@ const drumPlayers = {};
 const drumPlayersVelocity = {};
 const drumSampleLabels = {};
 const drumSampleURL = {};
+const drumSampleZs = {};
 drumArrangement.synthCallback = (note, length, velocity, time) => {
     const ins_name = DRUM_MIDI_NAME[note];
 	if(drumBuffers[ins_name] && drumBuffers[ins_name].loaded){
@@ -77,7 +69,7 @@ let bassSynth = new Tone.MonoSynth({
     	"decay": 0.2,
     	"sustain": 0.2,
     	"release": 1.0,
-    	"octaves": 1.0,
+    	"octaves": 3.0,
 	},
 	"filter":{
     	"type": "lowpass",
@@ -90,6 +82,23 @@ bassArrangement.synthCallback = (frequency, length, time) => {
     bassSynth.triggerAttackRelease(frequency, length, time);
 };
 
+//let soundPattern = [];
+let soundArrangement = new SoundArrangement();
+let soundSamples = [];
+let soundPool = [];
+let selectedSoundBar = [];
+let soundPlayers = new Tone.Players({baseUrl: ROOT_URL + "sound/"});
+let soundLastHue = 0;
+
+soundArrangement.synthCallback = (time, fn, length) => {
+    if(soundPlayers.has(fn)){
+        soundPlayers.player(fn).start(time, 0, length);
+    }
+    	//	if(this.sound_players.has(val.fn)){
+    	//		this.sound_players.player(val.fn).start(time, 0, val.length)
+    	//	}
+}
+
 
 // FX Chains
 const DRUM_FX_CHAIN = [
@@ -101,7 +110,7 @@ const SOUND_FX_CHAIN = [
 ]
 
 const BASS_FX_CHAIN = [
-	'vol', 'solo', 'meter',
+	'eq3', 'vol', 'solo', 'meter',
 ]
 
 const MASTER_FX_CHAIN = [
@@ -415,10 +424,10 @@ function buildDrumControls(){
 		const sampleRequestControls = document.createElement("div");
 		sampleRequestControls.classList.add("sample-request-controls");
 
-		const requestBtn = document.createElement("div");
-		requestBtn.className = "request-drum-samples btn";
-		requestBtn.innerText = "new sample";
-        requestBtn.onclick = () => {
+		const requestNewBtn = document.createElement("div");
+		requestNewBtn.className = "request-drum-samples btn";
+		requestNewBtn.innerText = "new";
+        requestNewBtn.onclick = () => {
             apiCall(id, ROOT_URL, "requestDrumSample", {instrument: ins_name})
             .then(data => {
                 if(!data || !data["ok"]){
@@ -426,11 +435,36 @@ function buildDrumControls(){
                 	return
                 }
                 const ds = data["drum_samples"];
-                drumSampleToLoad[ins_name] = drumSampleToLoad[ins_name].concat(ds);
+                drumSampleZs[ins_name] = data["z"];
+                drumSampleToLoad[ins_name] = [ds]; //drumSampleToLoad[ins_name].concat(ds);
                 updateDrumSamples();
            });
         }
-        sampleRequestControls.appendChild(requestBtn);
+        sampleRequestControls.appendChild(requestNewBtn);
+
+		const requestVariationBtn = document.createElement("div");
+		requestVariationBtn.className = "request-drum-samples btn";
+		requestVariationBtn.innerText = "var";
+        requestVariationBtn.onclick = () => {
+            if(!drumSampleZs[ins_name]){
+                console.log("cannot request variation of sample");
+                return
+            }
+            apiPostCall(id, ROOT_URL, "requestDrumSample", {instrument: ins_name, z: drumSampleZs[ins_name]})
+            .then(data => {
+                if(!data || !data["ok"]){
+                    console.log("no drum variation of sample data for " + ins_name);
+                	return
+                }
+                const ds = data["drum_samples"];
+                console.log(ds);
+                const z = data["z"];
+                drumSampleZs[ins_name] = z;
+                drumSampleToLoad[ins_name] = [ds];//drumSampleToLoad[ins_name].concat(ds);
+                updateDrumSamples();
+           });
+        }
+        sampleRequestControls.appendChild(requestVariationBtn);
 
         const trigBtn = document.createElement("div");
         trigBtn.className = "btn";
@@ -524,7 +558,7 @@ function buildBassControls(){
 	synthKnobs.appendChild(knobContainer);
 
 	// filter
-	let params = {default: 1.0, min: 1.0, max: 4.0};
+	let params = {default: 3.0, min: 1.0, max: 6.0};
 	({ knobContainer, knob } = createKnob("octaves", params));
 	knob.oninput = function(){
     	let val = this.value * (params.max - params.min) + params.min;
@@ -603,7 +637,8 @@ function updateDrumSamples(){
 }
 
 function updateSoundSamples(){
-    for(let sb of soundPattern){
+    for(let sb of soundArrangement.arrangement){
+        if(!sb) continue;
         const urls = sb.samples;
     	for(let url of urls){
     		const fp = getSamplePath(url);
@@ -626,12 +661,6 @@ function updateAudioTimes(){
 }
 
 function nextBar(){
-	if(soundPattern && soundPattern.length > 1){
-    	soundPattern[0].end();
-		soundPattern.shift();
-		soundPattern[0].start(0);
-		drawSoundGrid();
-	}
 
 	updateDrumSamples();
 	for(let ins_name in drumSampleToLoad){
@@ -819,16 +848,20 @@ window.onload = () => {
             	return
             }
 
-			for(let pattern of data["synth_data"]){
-    			const [trig, fns] = pattern;
-    			let sb = new SoundBar(makeSoundRange(trig), fns, soundPlayers);
-				soundPattern.push(sb);
-				if(soundPattern.length == 1){
-    				soundPattern[0].start(0);
-				}
-			}
-           	updateSoundSamples();
-           	drawSoundGrid();
+            recievedNewBar(
+                data,
+                SoundBar,
+                soundPool,
+                document.getElementById("sampler-pool"),
+                soundArrangement,
+                document.getElementById("sampler-arrangement"),
+                selectedSoundBar,
+                "sampler",
+                soundLastHue,
+            );
+
+            soundLastHue += 55;
+            updateSoundSamples();
         });
     }
 
@@ -840,16 +873,16 @@ window.onload = () => {
             	return
             }
 
-			for(let pattern of data["synth_data"]){
-    			const [trig, fns] = pattern;
-    			let sb = new SoundBar(makeSoundRange(trig), fns, soundPlayers);
-				soundPattern.push(sb);
-				if(soundPattern.length == 1){
-    				soundPattern[0].start(0);
-				}
-			}
-           	updateSoundSamples();
-           	drawSoundGrid();
+			//for(let pattern of data["synth_data"]){
+    		//	const [trig, fns] = pattern;
+    		//	let sb = new SoundBar(makeSoundRange(trig), fns, soundPlayers);
+			//	soundPattern.push(sb);
+			//	if(soundPattern.length == 1){
+    		//		soundPattern[0].start(0);
+			//	}
+			//}
+           	//updateSoundSamples();
+           	//drawSoundGrid();
         });
     }
 
@@ -956,5 +989,5 @@ window.onload = () => {
 	Tone.Transport.schedule(nextBar, "0:0:15");
 
 	setup();
-    drawSoundGrid();
+    //drawSoundGrid();
 }

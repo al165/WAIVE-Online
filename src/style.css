@@ -126,14 +126,14 @@ p {
 
 .sample-request-controls {
 	display: grid;
-	grid-template-columns: auto auto auto;
+	grid-template-columns: auto auto auto auto;
 	margin-right: 20px;
 	width: 240px;
 }
 
 .drum-sample-name {
 	grid-column-start: 1;
-	grid-column-end: 4;
+	grid-column-end: 5;
 	background-color: darkgray;
 	font-size: 11px;
 	overflow: hidden;

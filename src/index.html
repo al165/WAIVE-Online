@@ -53,12 +53,13 @@
 			<!--  ==== SAMPLER ====  -->
     		<div class="row"><h2>Sampler</h2></div>
     		<div class="play-area">
-    			<canvas width="800" height="102" id="soundgrid"></canvas>
+        		<div id="sampler-arrangement" class="arrangement-view"></div>
                 <div class="p-bar"></div>
     		</div>
-			<div id="sound-controls">
+			<div class="ins-channel" id="sound-controls">
+                <div class="spacer"></div>
 			</div>
-			<canvas width="800" height="60" id="soundgrid-arrangement"></canvas>
+			<div class="bar-pool" id="sampler-pool"></div>
     		<div class="controls">
                 <div id="request-sound-pattern" class="btn">new sampler patterns</div>
                 <div id="request-sound-samples" class="btn">new samples</div>

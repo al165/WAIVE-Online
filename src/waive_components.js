@@ -1,5 +1,5 @@
 import * as Tone from 'tone';
-import { getSamplePath } from './utils.js';
+import { getSamplePath, makeSoundRange } from './utils.js';
 
 const STOPPED = 0;
 const STARTED = 1;
@@ -119,30 +119,31 @@ class Bar {
 }
 
 export class SoundBar extends Bar {
-	constructor(pattern, samples, sound_players, hue=0){
+	constructor(pattern, hue=0){
 		super(hue);
-		this.pattern = pattern;
-		this.samples = samples;
-		this.sound_players = sound_players;
+		// pattern = [trig, fns] !!
+		console.log(pattern);
+		this.trig = makeSoundRange(pattern[0])
+		this.samples = pattern[1];
+	}
 
-		let timings = [];
-		for(let i = 0; i < pattern.length; i++){
-			const start = pattern[i][0];
-			const end = pattern[i][1];
+	renderToCanvas(canvas, grid=false){
+    	const ctx = canvas.getContext("2d");
+    	const barHeight = canvas.height;
+    	const gridWidth = canvas.width/16;
+    	const sampleHeight = Math.max(8, barHeight/5);
+    	const top = (barHeight - sampleHeight)/2;
 
-			const time = start*48 + "i";
-			const length = (end - start)*48 + "i";
-			const fn = getSamplePath(samples[i])[2];
+    	ctx.fillStyle = "#AAA";
+    	ctx.fillRect(0, 0, canvas.width, barHeight);
 
-			timings.push({time: time, fn: fn, length: length});
+		for(let i=0; i < this.trig.length; i++){
+        	const p = this.trig[i];
+    		const start = p[0];
+    		const end = p[1];
+    		ctx.fillStyle = 'hsl(' + 360*start/16 + ', 50%, 50%)';
+    		ctx.fillRect(start*gridWidth, top, (end - start)*gridWidth, sampleHeight);
 		}
-
-		this.part = new Tone.Part((time, val) => {
-    		if(this.sound_players.has(val.fn)){
-    			this.sound_players.player(val.fn).start(time, 0, val.length)
-    		}
-		}, timings)
-
 	}
 }
 
@@ -188,7 +189,7 @@ export class DrumBar extends Bar {
     renderToCanvas(canvas, grid=false){
         const ctx = canvas.getContext("2d");
 		const barwidth = canvas.width;
-		const barheight = canvas.height;
+		const barHeight = canvas.height;
 
     	ctx.fillStyle = "#AAA";
     	ctx.fillRect(0, 0, canvas.width, canvas.height);
@@ -197,19 +198,19 @@ export class DrumBar extends Bar {
          	for(let j = 0; j <= 16; j++){
              	if(j%8 == 0){
         			ctx.fillStyle = "#AAA";
-        			ctx.fillRect(j*barwidth/16, 0, barwidth/4, barheight);
+        			ctx.fillRect(j*barwidth/16, 0, barwidth/4, barHeight);
              	}
             	ctx.strokeStyle = "#666";
             	ctx.beginPath();
             	ctx.moveTo(j*barwidth/16, 0);
-            	ctx.lineTo(j*barwidth/16, barheight);
+            	ctx.lineTo(j*barwidth/16, barHeight);
             	ctx.stroke();
          	}
         	for(let i = 0; i <= 3; i++){
             	ctx.strokeStyle = "#666";
             	ctx.beginPath();
-            	ctx.moveTo(0, i*barheight/3);
-            	ctx.lineTo(barwidth, i*barheight/3);
+            	ctx.moveTo(0, i*barHeight/3);
+            	ctx.lineTo(barwidth, i*barHeight/3);
             	ctx.stroke();
         	}
         }
@@ -225,9 +226,9 @@ export class DrumBar extends Bar {
 
         		ctx.fillRect(
             		j*(barwidth/16),
-            		(i+(1-velocity))*(barheight/3),
+            		(i+(1-velocity))*(barHeight/3),
             		barwidth/16,
-            		(barheight/3)*(velocity),
+            		(barHeight/3)*(velocity),
         		);
     		}
 		}
@@ -425,4 +426,53 @@ export class DrumArrangement extends Arrangement {
 
 		return this.midi;
 	}
+}
+
+
+export class SoundArrangement extends Arrangement {
+
+    updatePart(){
+       	this.timings = [];
+		//this.sound_players = sound_players;
+
+		for(let i = 0; i < this.length; i++){
+    		if(!this.arrangement[i]){
+        		continue
+    		}
+
+    		const pattern = this.arrangement[i].trig;
+    		const samples = this.arrangement[i].samples;
+
+
+    		for(let j = 0; j < pattern.length; j++){
+    			const start = pattern[j][0];
+    			const end = pattern[j][1];
+
+    			//const time = start*48 + "i";
+    			const quarter = Math.floor(start/4);
+    			const sixteenth = start % 4;
+    			const time = `${i}:${quarter}:${sixteenth}`;
+    			const length = (end - start)*48 + "i";
+    			const fn = getSamplePath(samples[j])[2];
+
+    			this.timings.push({time: time, fn: fn, length: length});
+    		}
+		}
+
+		if(this.part){
+    		this.part.dispose();
+		}
+
+		this.part = new Tone.Part((time, val) => {
+			this.synthCallback(time, val.fn, val.length);
+		}, this.timings);
+
+		this.part.start(0);
+
+		//this.part = new Tone.Part((time, val) => {
+    	//	if(this.sound_players.has(val.fn)){
+    	//		this.sound_players.player(val.fn).start(time, 0, val.length)
+    	//	}
+		//}, timings)
+    }
 }
