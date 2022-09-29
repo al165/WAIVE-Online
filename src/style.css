@@ -248,6 +248,13 @@ select {
 	font-size: 8pt;
 }
 
+.stripe {
+    width: 10px;
+    height: 100%;
+    border: 0;
+    margin: 0 5px 0 0;
+}
+
 #drum-channels {
 	height: 300;
 	display: flex;

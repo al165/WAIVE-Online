@@ -54,25 +54,28 @@ export function apiCall(id, root, m_type, data) {
 
 
 export function apiPostCall(id, root, m_type, data) {
-	const headers = {
+    //console.log(data);
+	const req = {
     	method: "POST",
     	headers: {
         	'Accept': 'application/json',
-        	'Content-Type': 'application/json',
+        	'Content-type': 'application/json; charset=UTF-8',
     	},
-    	body: {
+    	body: JSON.stringify({
         	"type": m_type,
         	"id": id,
-        	"data": data
-    	}
+        	"data": data,
+    	})
 	}
 
-	return fetch(`${root}apipost/`, headers)
+	const url = `${root}apipost`;
+
+	return fetch(url, req)
 	.then(response => {
     	if(!response.ok){
         	console.log("failed request");
-        	console.log(headers);
         	console.log(response.status);
+        	return
     	}
     	return response.json();
 	})

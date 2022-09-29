@@ -1,6 +1,6 @@
 import os
 import sys
-from flask import Flask, render_template, request, send_from_directory
+from flask import Flask, render_template, request, send_from_directory, jsonify
 
 sys.path.extend(["../../REALTIME/", "../../COMMON_UTILS/"])
 from waive_server import WaiveServer
@@ -25,6 +25,12 @@ r_q = ws.returnQueue
 
 ws.start()
 
+@app.route("/apipost", methods=["POST"])
+def apiPostRequest():
+    data = request.get_json()
+    msg_q.put((data['type'], data['id'], data['data']))
+    m_type, data = r_q.get()
+    return data
 
 @app.route("/")
 def index():
