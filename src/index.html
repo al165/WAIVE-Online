@@ -38,7 +38,7 @@
     		<div class="bar-pool" id="drum-pool"></div>
     		<div class="controls">
                 <input type="range" class="input-knob" id="drum-threshold" data-diameter="40" min="0" max="1" step="0.01" data-bgcolor="#444" data-fgcolor="#BBB"/>
-                <div id="request-new-grid" class="btn">new</div>
+                <div id="request-new-grid" class="btn">new drum pattern</div>
                 <div id="request-variation-grid" class="btn">variation</div>
                 <div id="drum-midi-download" class="btn" target="_blank" download="drum_pattern.mid">⤓ drum arrangement</div>
     		</div>
@@ -55,9 +55,9 @@
     		<div class="bar-pool" id="bass-pool">
     		</div>
     		<div class="controls">
-                <div id="request-new-bassline" class="btn">new</div>
+                <div id="request-new-bassline" class="btn">new bassline</div>
                 <div id="request-variation-bassline" class="btn">variation</div>
-                <div id="bassline-midi-download" class="btn" target="_blank" download="bassline.mid">⤓ arrangement</div>
+                <div id="bassline-midi-download" class="btn" target="_blank" download="bassline.mid">⤓ bass arrangement</div>
     		</div>
 
 			<!--  ==== SAMPLER ====  -->
@@ -71,7 +71,7 @@
 			</div>
 			<div class="bar-pool" id="sampler-pool"></div>
     		<div class="controls">
-                <div id="request-sound-pattern" class="btn">new sampler patterns</div>
+                <div id="request-sound-pattern" class="btn">new sampler pattern</div>
                 <!-- <div id="request-sound-samples" class="btn">new samples</div> -->
     		</div>
     		<div class="row"><h2>Master FX</h2></div>
@@ -82,42 +82,51 @@
 		</div>
 
 		<br><br><br><br>
-		<h3>How to use (INCOMPLETE)</h3>
+		<h3>How to use:</h3>
 		<ul>
-    		<li>"play" and "bpm" controls are at the top.</li>
-    		<li>WAIVE creates four bar loops that are repeated. You can generate and arrange bars as follows:</li>
+    		<li>Transport controls are at the top: play, bpm and loop length (number of measures).</li>
+    		<li>Also the ability to record and download the full loop. (Stops playback and recordes the result to a .wav file).</li>
+    		<li>WAIVE creates loops of "bars" that are repeated continuously. You can generate and arrange bars as follows:</li>
     		<li><b>Generating bars</b>
         		<ul>
-            		<li>Generate a single bar for an instrument by clicking "new". If this is the first one, it is added to the arrangement view.</li>
-            		<li>Double clicking the small preview of a bar adds it to the arrangement view.</li>
-            		<li>Clicking the preview of the bar and then clicking "variation" will generate a new bar with a slight variation. Double click the new bar to add it to the arrangement view.</li>
+            		<li>Each instrument (Drum Machine, Bass Synth, Sampler) consists of an Arrangement View, Bar Pool, Instrument FX, and generation controls.</li>
+            		<li>Generate a single bar for an instrument by clicking "new ..." in the generation controls. This adds it to the collection of generated bar. If this is the first one, it is also automatically added to the arrangement view.</li>
+            		<li>Clicking the [add] button on the small preview of a bar adds it to the first avaliable position in the arrangement view. Alternatively, double clicking the bar it will do the same.</li>
+            		<li>Selecting a bar in the Bar Pool and then clicking "variation" will generate a new bar with a slight variation*. This new bar can be added to the arrangement view as before.</li>
             		<li>Clicking a bar in the arrangement view removes it.</li>
-            		<li>Right clicking the small preview bar will delete it.</li>
+            		<li>The [del] button on the bar in the bar pool will remove it completely, and removes any occurance in the arrangement view.</li>
         		</ul>
     		</li>
     		<li><b>Drum Machine:</b>
         		<ul>
     				<li>Load samples for the KickDrum, SnareDrum and HighHat by clicking the "new sample" button.</li>
+    				<li>"var" will select a similar sounding sample, whereas "new" will suggest a completely new sample.</li>
     				<li>You can trigger the sample manually by pressing the ▶ button.</li>
+    				<li>"⤓" will download the raw sample to your computer.
             		<li>The name of the sample is shown below these buttons.</li>
-            		<li>You will need to generate a drum pattern to begin hearing the drum samples with the "new" button.</li>
-            		<li>The current drum pattern is shown on the large grid, and the queue of the next patterns shown below on the smaller grid. After each loop, the next pattern is selected until there are no more.</li>
+            		<li>You will need to generate a drum pattern to begin hearing the drum samples with the "new drum pattern" button.</li>
             		<li>The dial next to the pattern generate button sets the sensitivity of the pattern - the lower the dial, the more drum triggers there are.</li>
-            		<li>You can download a MIDI file of the drum pattern with the download button.</li>
+            		<li>You can download a MIDI file of the drum arrangement with the download button.</li>
         		</ul>
     		</li>
-    		<li><b>Sampler:</b>
+
+    		<li><b>Bass Synth:</b>
+        		<ul>
+            		<li>Basic synth options are avliable in the FX chain to control the ADSR (attack, decay, sustain, release), as well as portamento (sliding) effect, and filter controls.</li>
+            		<li></li>
+        		</ul>
+    		</li>
+            <li><b>Sampler:</b>
         		<ul>
             		<li>Generate a "melody" of sound samples by clicking "new sampler patterns" button. This will request a sequence of melodies shown below the main grid.</li>
-            		<li>The names of each sample are shown in the coloured boxes.</li>
-            		<li>"new samples" button will transition the current set of samples to a new set after each loop.</li>
+            		<li>Currently there are no controls over the samples and patterns generated.</li>
         		</ul>
         	</li>
     		<li><b>FXs:</b>
         		<ul>
             		<li>Click on the name of an effect to toggle it (colored background means the effect is active, greyed and crossed out means it is bypassed).</li>
             		<li>Parameters of the effects can be changed by dragging up or down on a dial.</li>
-            		<li>The <b>Drum Machine</b> and <b>Sampler</b> are mixed into <b>Master FX</b> before routing to the speakers.</li>
+            		<li>All the instrunments are mixed into <b>Master FX</b> before routing to the speakers.</li>
         		</ul>
         	</li>
 		</ul>

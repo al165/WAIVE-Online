@@ -763,7 +763,7 @@ window.onload = () => {
                 drumArrangement,
                 document.getElementById("drum-arrangement"),
                 selectedDrumBar,
-                "drum",
+                "~",
                 drumLastHue,
             )
 
@@ -796,7 +796,7 @@ window.onload = () => {
                 drumArrangement,
                 document.getElementById("drum-arrangement"),
                 selectedDrumBar,
-                "drum*",
+                "*",
                 hue,
             )
     	})
@@ -818,7 +818,7 @@ window.onload = () => {
                 soundArrangement,
                 document.getElementById("sampler-arrangement"),
                 selectedSoundBar,
-                "sampler",
+                "~",
                 soundLastHue,
             );
 
@@ -855,7 +855,7 @@ window.onload = () => {
                 bassArrangement,
                 document.getElementById("bass-arrangement"),
                 selectedBassBar,
-                "bass",
+                "~ ",
                 bassLastHue,
             );
 
@@ -887,7 +887,7 @@ window.onload = () => {
                 bassArrangement,
                 document.getElementById("bass-arrangement"),
                 selectedBassBar,
-                "bass*",
+                "*",
                 hue,
             );
     	})
