@@ -15,12 +15,22 @@
     		<div class="row">
                 <div id="play" class="btn">play</div>
                 <input type="number" min="60" max="200" id="bpm" value="110">
-                <div id="download-bar" class="btn">download loop</div>
+                <select name="loop" id="loop-length">
+                	<option value="4">4</option>
+                	<option value="2">2</option>
+                	<option value="1">1</option>
+                	<option value="0.5">1/2</option>
+                	<option value="0.25">1/4</option>
+                	<option value="0.125">1/8</option>
+                	<option value="0.0625">1/16</option>
+                </select>
+                <div id="download-loop" class="btn">download loop</div>
     		</div>
 
 			<!--  ==== DRUM MACHINE ====  -->
     		<div class="row"><h2>Drum Machine</h2></div>
     	    <div class="play-area">
+        	    <canvas id="timeline" width="800" height="12"></canvas>
         		<div id="drum-arrangement" class="arrangement-view"></div>
             	<div class="p-bar"></div>
         	</div>
@@ -62,7 +72,7 @@
 			<div class="bar-pool" id="sampler-pool"></div>
     		<div class="controls">
                 <div id="request-sound-pattern" class="btn">new sampler patterns</div>
-                <div id="request-sound-samples" class="btn">new samples</div>
+                <!-- <div id="request-sound-samples" class="btn">new samples</div> -->
     		</div>
     		<div class="row"><h2>Master FX</h2></div>
     		<div class="row" id="master-controls">

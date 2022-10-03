@@ -12,12 +12,13 @@ import { createKnob, createFXKnob, createSelection, createSwitch, Meter, createB
 import { download, getSamplePath, apiCall, apiPostCall, cleanName, makeSoundRange } from './utils.js';
 import { BypassableFX, DrumBar, SoundBar, BassBar, DrumArrangement, BassArrangement, SoundArrangement } from './waive_components.js';
 
-console.log(window.location.pathname);
 const ROOT_URL = window.location.pathname;
 
 Tone.Transport.bpm.value = 110;
 Tone.Transport.loop = true;
-Tone.Transport.loopEnd = "4m";
+Tone.Transport.loopEnd = "4:0";
+
+let loopLength = 4;
 
 let recorder = new Tone.Recorder();
 let recording = false;
@@ -94,9 +95,6 @@ soundArrangement.synthCallback = (time, fn, length) => {
     if(soundPlayers.has(fn)){
         soundPlayers.player(fn).start(time, 0, length);
     }
-    	//	if(this.sound_players.has(val.fn)){
-    	//		this.sound_players.player(val.fn).start(time, 0, val.length)
-    	//	}
 }
 
 
@@ -155,80 +153,34 @@ let bassChain = [];
 let masterChain = [];
 let meters = [];
 
+const timelineCanvas = document.getElementById("timeline")
 
-function drawSoundGrid(){
-    const blockHeight = soundcanvas.height;
-    const blockWidth = soundcanvas.width/16;
 
-    soundgrid.clearRect(0, 0, soundcanvas.width, soundcanvas.height);
-	soundarrangementgrid.fillStyle = "#AAA";
-	soundarrangementgrid.fillRect(0, 0, soundarrangementcanvas.width, soundarrangementcanvas.height);
+function drawTimeline(){
+    const width = timelineCanvas.width;
+    const height = timelineCanvas.height;
+    const ctx = timelineCanvas.getContext("2d");
+    const barWidth = width/4;
 
- 	for(let j = 0; j < 16; j++){
-     	if(j%8 == 0){
-			soundgrid.fillStyle = "#AAA";
-			soundgrid.fillRect(j*blockWidth, 0, 4*blockWidth, soundcanvas.height);
-     	}
-    	soundgrid.strokeStyle = "#666";
-    	soundgrid.beginPath();
-    	soundgrid.moveTo(j*blockWidth, 0);
-    	soundgrid.lineTo(j*blockWidth, soundcanvas.height);
-    	soundgrid.stroke();
- 	}
+    ctx.fillStyle = "#AAA";
+    ctx.fillRect(0, 0, width, height);
 
-	soundgrid.lineWidth = 4;
-	soundgrid.strokeStyle = "#666";
- 	for(let i = 0; i < 2; i++){
-    	soundgrid.beginPath();
-    	soundgrid.moveTo(0, i*blockHeight-1);
-    	soundgrid.lineTo(soundcanvas.width, i*blockHeight-1);
-    	soundgrid.stroke();
- 	}
+    ctx.lineWidth = 1;
+	ctx.strokeStyle = "black";
+    for(let i = 0; i < 4; i++){
+		ctx.moveTo(i*barWidth, 0);
+		ctx.lineTo(i*barWidth, height);
+		ctx.stroke();
+    }
 
-	// Draw triggers
-	if(!soundPattern || soundPattern.length == 0){
-    	return
-	}
+    ctx.strokeStyle = "#F80";
+    ctx.lineWidth = 3;
+    ctx.strokeRect(0, 0, width * loopLength / 4, height);
 
-	const sb = soundPattern[0];
-	let start;
-	let end;
-	for(let i = 0; i < sb.pattern.length; i++){
-    	const p = sb.pattern[i];
-		start = p[0];
-		end = p[1];
-		soundgrid.fillStyle = 'hsl(' + 360*start/16 + ', 50%, 50%)';
-		soundgrid.fillRect(start*blockWidth+1, 10, (end - start)*blockWidth-2, blockHeight-20);
-
-		const url = sb.samples[i];
-		const fp = cleanName(getSamplePath(url)[2]);
-		soundgrid.fillStyle = "black";
-		soundgrid.textBaseline = "top";
-		soundgrid.fillText(fp, start*blockWidth+3, blockHeight/2 - 5);
-	}
-
-	const barWidth = blockWidth*2;
-	const barHeight = soundarrangementcanvas.height;
-
-	for(let k = 0; k < soundPattern.length; k++){
-		soundarrangementgrid.fillStyle = "#444";
-		soundarrangementgrid.fillRect(k*barWidth, 0, barWidth-2, barHeight);
-		soundarrangementgrid.fillStyle = "#CCC";
-		soundarrangementgrid.textBaseline = "top";
-		soundarrangementgrid.fillText(k+1, k*barWidth + 3, 3);
-
-    	for(let p of soundPattern[k].pattern){
-        	start = p[0];
-        	end = p[1];
-    		soundarrangementgrid.fillStyle = 'hsl(' + 360*start/16 + ', 50%, 50%)';
-    		soundarrangementgrid.fillRect(
-        		k*barWidth+start*(barWidth-2)/16,
-        		barHeight/2 - 5,
-        		(end-start)*(barWidth-2)/16,
-        		10
-    		);
-    	}
-	}
+	ctx.fillStyle = "black";
+    for(let i = 0; i < 4; i++){
+		ctx.fillText(i+1, barWidth * i + 3, 10);
+    }
 }
 
 function buildFXChain(fxList, channels=2, bypass=false){
@@ -367,8 +319,8 @@ function buildFXChain(fxList, channels=2, bypass=false){
 
 function recordLoop(){
 	Tone.Transport.stop();
-
 	play_btn.innerText = "--";
+	document.getElementById("download-loop");
 
 	let callback = play_btn.onclick;
 	play_btn.onclick = null;
@@ -385,7 +337,7 @@ function recordLoop(){
 		play_btn.onclick = callback;
     	play_btn.innerText = "play";
     	Tone.Transport.loop = true;
-	}, "1m");
+	}, "4m");
 
 	Tone.Transport.start();
 }
@@ -708,14 +660,19 @@ function deleteBar(bar, barPool, arrangement, arrangementView, slot){
     // remove from arrangement
     for(let i = 0; i < arrangement.length; i++){
         if(arrangement.at(i) == bar){
-            arrangement.remove(i)
+            arrangement.remove(i);
         }
-        // redraw arrangementView
     }
-    drawArrangementView(arrangement, arrangementView)
 
-    // delete element
-    bar.element.remove();
+    // redraw arrangementView
+    drawArrangementView(arrangement, arrangementView);
+
+    // delete element (animated)
+    bar.element.style.maxWidth = "0px";
+    bar.element.style.minWidth = "0px";
+    setTimeout(() => {
+		bar.element.remove()
+    }, 200);
 }
 
 function drawArrangementView(arrangement, arrangementView){
@@ -744,7 +701,7 @@ function recievedNewBar(data, barClass, barPool, barPoolView, arrangement, arran
     const z = data["z"];
     const bar = new barClass(notes, hue);
     bar.z = z;
-    const {barElement, barCanvas} = createBarElement(barName, bar.hue);
+    const {barElement, barCanvas, barDelete, barAdd} = createBarElement(barName, bar.hue);
     bar.element = barElement;
     bar.element.onclick = (event) => {
         selectBar(slot, barPool, bar);
@@ -752,7 +709,11 @@ function recievedNewBar(data, barClass, barPool, barPoolView, arrangement, arran
     bar.element.ondblclick = (event) => {
         addBar(arrangement, arrangementView, bar);
     }
-    bar.element.oncontextmenu = (event) => {
+    barAdd.onclick = (event) => {
+        addBar(arrangement, arrangementView, bar);
+    }
+
+    barDelete.onclick = (event) => {
         event.preventDefault();
         deleteBar(bar, barPool, arrangement, arrangementView, slot);
     }
@@ -775,8 +736,9 @@ window.onload = () => {
 	// set draw loop
     setInterval(() => {
     	const p = Tone.Transport.progress;
+    	const loopEnd = loopLength * 0.25;
     	for(let pbar of document.getElementsByClassName("p-bar")){
-			pbar.style.left = Math.min(100, p*100) + "%";
+			pbar.style.left = Math.min(100, p*loopEnd*100) + "%";
     	}
 
     	for(let meter of meters){
@@ -865,6 +827,7 @@ window.onload = () => {
         });
     }
 
+	/*
     document.getElementById("request-sound-samples").onclick = () => {
         apiCall(id, ROOT_URL, "requestSynthData", {key: "synth"})
         .then(data => {
@@ -872,19 +835,9 @@ window.onload = () => {
                 console.log("no sound pattern data");
             	return
             }
-
-			//for(let pattern of data["synth_data"]){
-    		//	const [trig, fns] = pattern;
-    		//	let sb = new SoundBar(makeSoundRange(trig), fns, soundPlayers);
-			//	soundPattern.push(sb);
-			//	if(soundPattern.length == 1){
-    		//		soundPattern[0].start(0);
-			//	}
-			//}
-           	//updateSoundSamples();
-           	//drawSoundGrid();
         });
     }
+    */
 
     document.getElementById("request-new-bassline").onclick = () => {
         apiCall(id, ROOT_URL, "requestBassline", {})
@@ -956,7 +909,18 @@ window.onload = () => {
 		Tone.Transport.bpm.value = this.value;
     };
 
-    document.getElementById("download-bar").onclick = () => {
+    document.getElementById("loop-length").oninput = function(){
+        loopLength = this.value;
+        const bars = Math.floor(loopLength);
+        const quarters = Math.floor(4*loopLength) % 4;
+        const sixteenths = Math.floor(16*loopLength) % 4;
+        console.log(`${bars}:${quarters}:${sixteenths}`);
+        Tone.Transport.loopEnd = `${bars}:${quarters}:${sixteenths}`;
+		drawTimeline();
+    }
+    document.getElementById("loop-length").value = "4";
+
+    document.getElementById("download-loop").onclick = () => {
 		recordLoop();
     }
 
@@ -977,17 +941,18 @@ window.onload = () => {
 
 	const drumMidiDownload = document.getElementById("drum-midi-download");
 	drumMidiDownload.onclick = function() {
-    	if(drumPattern.length == 0){
-        	return
-    	}
-    	const midi = drumPattern[0].toMidi();
-    	console.log(midi);
-
+    	const midi = drumArrangement.toMidi();
 		download(midi, "drum_pattern.mid");
+	}
+
+	const bassMidiDownload = document.getElementById("bassline-midi-download");
+	bassMidiDownload.onclick = function() {
+    	const midi = bassArrangement.toMidi();
+		download(midi, "bassline.mid");
 	}
 
 	Tone.Transport.schedule(nextBar, "0:0:15");
 
 	setup();
-    //drawSoundGrid();
+	drawTimeline();
 }

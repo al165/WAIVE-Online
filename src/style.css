@@ -57,6 +57,15 @@ p {
 	background-color: #F80;
 }
 
+#timeline {
+	position: absolute;
+	top: -12px;
+	height: 12px;
+	width: 800px;
+	padding: 0px;
+	margin: 0px;
+}
+
 .row {
 	grid-column-start: 1;
 	grid-column-end: 3;
@@ -76,22 +85,49 @@ p {
 }
 
 .bar {
+    max-width: 98px;
     min-width: 98px;
+    width: 98px;
     margin: 1px;
+    padding: 0 2px;
     border: 1px black solid;
     cursor: pointer;
     border-radius: 4px;
     display: flex;
     flex-direction: column;
+    position: relative;
+    transition: max-width 0.3s, min-width 0.3s;
+    overflow: hidden;
 }
 
 .bar:hover {
     border: 1px #F80 solid;
 }
 
+.bar > .bar-title {
+    text-align: left;
+    padding-left: 2px;
+}
+
+.bar-title span {
+    margin-left: 4px;
+}
+
 .bar-preview {
     width: 98px;
     height: 100%;
+}
+
+.bar-controls {
+    position: absolute;
+    display: block;
+    height: 10pt;
+    top: 1px;
+    right: 1px;
+}
+
+.bar-controls:hover {
+    display: block;
 }
 
 .bar-arrangement {

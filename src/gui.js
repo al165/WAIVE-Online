@@ -134,7 +134,19 @@ export function createBarElement(name="bar", hue=0){
 	barCanvas.classList.add("bar-preview");
 	barElement.appendChild(barCanvas);
 
-	return {barElement, barCanvas};
+	const barControls = document.createElement("div");
+	barName.appendChild(barControls);
+	barControls.classList.add("bar-controls");
+
+	const barDelete = document.createElement("span");
+	barDelete.innerText = "[del]";
+	barControls.appendChild(barDelete);
+
+	const barAdd = document.createElement("span");
+	barAdd.innerText = "[add]";
+	barControls.appendChild(barAdd);
+
+	return {barElement, barCanvas, barDelete, barAdd};
 }
 
 
