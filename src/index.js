@@ -3,6 +3,7 @@ import './style.css';
 import './input-knobs.js';
 import './knob.png';
 import './slider.png';
+const OSC = require('osc-js');
 
 const MidiWriter = require("midi-writer-js");
 import AudioRecorder from 'audio-recorder-polyfill';
@@ -42,6 +43,10 @@ drumArrangement.synthCallback = (note, length, velocity, time) => {
 	if(drumBuffers[ins_name] && drumBuffers[ins_name].loaded){
 		drumPlayers[ins_name].start(time, 0, "16t");
 		drumPlayersVelocity[ins_name].gain.setValueAtTime(velocity, time);
+		Tone.Draw.schedule(() => {
+    		const a = DRUM_NAMES[ins_name];
+    		sendOSC("/audio/drum/"+a, velocity);
+		}, time);
 	}
 }
 
@@ -81,6 +86,9 @@ let bassSynth = new Tone.MonoSynth({
 
 bassArrangement.synthCallback = (frequency, length, time) => {
     bassSynth.triggerAttackRelease(frequency, length, time);
+    Tone.Draw.schedule(() => {
+        sendOSC("/audio/bass", Tone.Frequency(frequency, "hz").toMidi());
+    }, time);
 };
 
 //let soundPattern = [];
@@ -94,6 +102,7 @@ let soundLastHue = 0;
 soundArrangement.synthCallback = (time, fn, length) => {
     if(soundPlayers.has(fn)){
         soundPlayers.player(fn).start(time, 0, length);
+        sendOSC("/audio/sound", fn);
     }
 }
 
@@ -124,9 +133,9 @@ const DRUMCOLORS = {
 }
 
 const DRUM_NAMES = {
-	"00_KD": "kick",
-	"01_SD": "snare",
-	"02_HH": "hat",
+	"00_KD": "kd",
+	"01_SD": "sd",
+	"02_HH": "hh",
 }
 
 const DRUM_KEYS = {
@@ -155,6 +164,19 @@ let meters = [];
 
 const timelineCanvas = document.getElementById("timeline")
 
+const osc = new OSC();
+osc.open();
+
+//document.getElementById('send').addEventListener('click', function() {
+//    var message = new OSC.Message('/test/random', Math.random());
+//    osc.send(message);
+//});
+
+
+function sendOSC(address, ...data){
+    var message = new OSC.Message(address, ...data);
+    osc.send(message);
+}
 
 function drawTimeline(){
     const width = timelineCanvas.width;
@@ -696,7 +718,17 @@ function drawArrangementView(arrangement, arrangementView){
     }
 }
 
-function recievedNewBar(data, barClass, barPool, barPoolView, arrangement, arrangementView, slot, barName="bar", hue=0){
+function recievedNewBar(
+    data,
+    barClass,
+    barPool,
+    barPoolView,
+    arrangement,
+    arrangementView,
+    slot,
+    barName="bar",
+    hue=0
+){
     const notes = data["notes"];
     const z = data["z"];
     const bar = new barClass(notes, hue);
@@ -898,15 +930,19 @@ window.onload = () => {
         if(Tone.Transport.state == "started"){
         	Tone.Transport.stop();
         	play_btn.innerText = "play";
+        	sendOSC("/audio/playing", 0);
         } else {
         	Tone.Transport.start();
         	play_btn.innerText = "stop";
+        	sendOSC("/audio/bpm", Tone.Transport.bpm.value);
+        	sendOSC("/audio/playing", 1);
         }
     }
 
 	document.getElementById("bpm").value = 110;
 	document.getElementById("bpm").oninput = function(){
 		Tone.Transport.bpm.value = this.value;
+		sendOSC("/audio/bpm", this.value);
     };
 
     document.getElementById("loop-length").oninput = function(){
@@ -914,7 +950,6 @@ window.onload = () => {
         const bars = Math.floor(loopLength);
         const quarters = Math.floor(4*loopLength) % 4;
         const sixteenths = Math.floor(16*loopLength) % 4;
-        console.log(`${bars}:${quarters}:${sixteenths}`);
         Tone.Transport.loopEnd = `${bars}:${quarters}:${sixteenths}`;
 		drawTimeline();
     }
@@ -952,6 +987,14 @@ window.onload = () => {
 	}
 
 	Tone.Transport.schedule(nextBar, "0:0:15");
+
+	const loop = new Tone.Loop((time) => {
+    	const now = Tone.Transport.position.split(":");
+    	const bar = parseInt(now[0]);
+    	const beat = parseInt(now[1]);
+    	//const sixteenths = parseInt(now[2]);
+    	sendOSC("/audio/transport", bar, beat);
+	}, "4n").start(0);
 
 	setup();
 	drawTimeline();
