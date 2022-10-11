@@ -569,22 +569,18 @@ function setup(){
     // build SYNTH FXs chain
 	let { chain, container } = buildFXChain(SOUND_FX_CHAIN);
 	const soundChannel = document.createElement("div");
-	soundChannel.classList.add("ins-channel");
 	soundChannel.appendChild(container);
 	document.getElementById("sound-controls").appendChild(soundChannel);
 	soundChain = chain;
 	soundPlayers.connect(soundChain[0]);
 
-
 	// build BASS FXs chain
 	({ chain, container } = buildFXChain(BASS_FX_CHAIN));
 	const bassChannel = document.createElement("div");
-	//bassChannel.classList.add("ins-channel");
 	bassChannel.appendChild(container);
 	document.getElementById("bass-controls").appendChild(bassChannel);
 	bassChain = chain;
 	bassSynth.connect(bassChain[0]);
-
 
     // build MASTER FXs chain
     ({ chain, container } = buildFXChain(MASTER_FX_CHAIN, 2, true));
@@ -747,7 +743,7 @@ function recievedNewBar(
     const bar = new barClass(notes, hue);
     bar.z = z;
     const {barElement, barCanvas, barDelete, barAdd} = createBarElement(barName, bar.hue);
-    bar.element = barElement;
+    bar.addElement(barElement);
     bar.element.onclick = (event) => {
         selectBar(slot, barPool, bar);
     }
@@ -769,6 +765,8 @@ function recievedNewBar(
         addBar(arrangement, arrangementView, bar);
    	}
 	bar.renderToCanvas(barCanvas)
+
+	return bar;
 }
 
 window.onload = () => {
@@ -855,7 +853,7 @@ window.onload = () => {
             	return
             }
 
-            recievedNewBar(
+            const bar = recievedNewBar(
                 data,
                 SoundBar,
                 soundPool,
@@ -866,6 +864,11 @@ window.onload = () => {
                 "~",
                 soundLastHue,
             );
+
+            const overlay = document.createElement("div");
+            overlay.classList.add("bar-overlay");
+            overlay.innerText = bar.samples;
+            bar.addHoverElement(overlay);
 
             soundLastHue += 55;
             updateSoundSamples();

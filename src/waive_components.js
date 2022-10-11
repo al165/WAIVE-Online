@@ -95,10 +95,31 @@ class Bar {
         this.z = null;
         this.hue = hue;
         this.element = null;
+        this.hover_element = null;
     }
 
     renderToCanvas(canvas, grid=False){
         return;
+    }
+
+    addElement(el){
+        this.element = el;
+    }
+
+    addHoverElement(el){
+        this.hover_element = el;
+        this.hover_element.style.display = "none";
+        if(!this.element){
+            return
+        }
+        this.element.appendChild(el);
+
+        this.element.onmouseenter = () => {
+            this.hover_element.style.display = "block";
+        }
+        this.element.onmouseleave = () => {
+            this.hover_element.style.display = "none";
+        }
     }
 
 	start(time=0){

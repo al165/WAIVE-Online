@@ -213,6 +213,20 @@ p {
     display: block;
 }
 
+.bar-overlay {
+	width: 100%;
+	height: 100%;
+	position: absolute;
+	background-color: #000A;
+	color: white;
+	font-size: 8pt;
+	display: none;
+}
+
+.bar-overlay:hover {
+    display: block;
+}
+
 .bar-arrangement {
     width: 198px;
     position: absolute;
