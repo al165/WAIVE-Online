@@ -67,6 +67,7 @@ p {
 }
 
 #transport-controls {
+    position: relative;
     background-color: #444;
     padding: 10px;
     display: flex;
@@ -128,6 +129,15 @@ p {
 
 #loop-length {
     width: 68px;
+}
+
+#osc-status {
+    position: absolute;
+    color: #F80;
+    font-size: 8pt;
+   	top: 0;
+   	left: 5px;
+   	display: none;
 }
 
 .verticle {

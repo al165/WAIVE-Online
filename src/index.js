@@ -81,7 +81,6 @@ let bassSynth = new Tone.MonoSynth({
     	"type": "lowpass",
     	"Q": 1.0,
 	}
-
 });
 
 bassArrangement.synthCallback = (frequency, length, time) => {
@@ -162,18 +161,34 @@ let bassChain = [];
 let masterChain = [];
 let meters = [];
 
-const timelineCanvas = document.getElementById("timeline")
+const timelineCanvas = document.getElementById("timeline");
 
+const oscStatus = document.getElementById("osc-status");
+let enableOSC = false;
 const osc = new OSC();
+osc.on("open", () => {
+    enableOSC = true;
+    oscStatus.style.display = "block";
+    oscStatus.innerText = "● OSC connected";
+    oscStatus.style.color = "#F80";
+});
+osc.on("close", () => {
+    enableOSC = false;
+    oscStatus.innerText = "○ OSC disconnected";
+    oscStatus.style.color = "#AAA";
+})
+osc.on("error", (err) => {
+    enableOSC = false;
+    oscStatus.innerText = "◌ OSC error";
+    oscStatus.style.color = "#A00";
+    console.log(err);
+})
 osc.open();
 
-//document.getElementById('send').addEventListener('click', function() {
-//    var message = new OSC.Message('/test/random', Math.random());
-//    osc.send(message);
-//});
-
-
 function sendOSC(address, ...data){
+    if(!enableOSC){
+        return
+    }
     var message = new OSC.Message(address, ...data);
     osc.send(message);
 }
