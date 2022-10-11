@@ -201,7 +201,7 @@ function drawTimeline(){
 
 	ctx.fillStyle = "black";
     for(let i = 0; i < 4; i++){
-		ctx.fillText(i+1, barWidth * i + 3, 10);
+		ctx.fillText(i, barWidth * i + 3, 10);
     }
 }
 
@@ -327,10 +327,8 @@ function buildFXChain(fxList, channels=2, bypass=false){
     	container.appendChild(fxBox);
     }
 
-	//console.log(" == effects channels:");
 	for(let i = 0; i < chain.length - 1; i++){
 		chain[i].connect(chain[i+1]);
-		//console.log(`${fxList[i]} ${chain[i].numberOfInputs} ${chain[i].numberOfOutputs} ${chain[i].channelCount}`);
 	}
 
 	return {
@@ -357,9 +355,9 @@ function recordLoop(){
 		stopRecording();
 		Tone.Transport.stop(0);
 		play_btn.onclick = callback;
-    	play_btn.innerText = "play";
+    	play_btn.innerText = "▶";
     	Tone.Transport.loop = true;
-	}, "4m");
+	}, Tone.Transport.loopEnd);
 
 	Tone.Transport.start();
 }
@@ -929,20 +927,29 @@ window.onload = () => {
         Tone.start();
         if(Tone.Transport.state == "started"){
         	Tone.Transport.stop();
-        	play_btn.innerText = "play";
+        	play_btn.innerText = "▶";
         	sendOSC("/audio/playing", 0);
         } else {
         	Tone.Transport.start();
-        	play_btn.innerText = "stop";
+        	play_btn.innerText = "■";
         	sendOSC("/audio/bpm", Tone.Transport.bpm.value);
         	sendOSC("/audio/playing", 1);
         }
     }
 
-	document.getElementById("bpm").value = 110;
-	document.getElementById("bpm").oninput = function(){
-		Tone.Transport.bpm.value = this.value;
-		sendOSC("/audio/bpm", this.value);
+	const bpmElement = document.getElementById("bpm");
+	const updateBPM = function(d){
+    	let newBpm = Math.round(Tone.Transport.bpm.value + d);
+    	newBpm = Math.min(Math.max(60, newBpm), 180);
+		Tone.Transport.bpm.value = newBpm;
+		bpmElement.children[0].innerText = newBpm;
+		sendOSC("/audio/bpm", newBpm);
+	}
+	bpmElement.children[1].onclick = () => {
+    	updateBPM(-1);
+    };
+	bpmElement.children[2].onclick = () => {
+    	updateBPM(1);
     };
 
     document.getElementById("loop-length").oninput = function(){
@@ -988,13 +995,21 @@ window.onload = () => {
 
 	Tone.Transport.schedule(nextBar, "0:0:15");
 
-	const loop = new Tone.Loop((time) => {
+	const OSCloop = new Tone.Loop((time) => {
     	const now = Tone.Transport.position.split(":");
     	const bar = parseInt(now[0]);
     	const beat = parseInt(now[1]);
     	//const sixteenths = parseInt(now[2]);
     	sendOSC("/audio/transport", bar, beat);
 	}, "4n").start(0);
+
+	const transportControlsLoop = new Tone.Loop((time) => {
+    	const transportTime = document.getElementById("transport-time");
+    	Tone.Draw.schedule(()=>{
+        	const time = Tone.Transport.position.slice(0, 5);
+        	transportTime.innerText = time;
+    	}, time)
+	}, "16n").start(0);
 
 	setup();
 	drawTimeline();

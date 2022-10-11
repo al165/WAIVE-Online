@@ -66,6 +66,76 @@ p {
 	margin: 0px;
 }
 
+#transport-controls {
+    background-color: #444;
+    padding: 10px;
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    border-radius: 5px;
+}
+
+#transport-time {
+    color: #F80;
+    font-size: 38pt;
+    font-family: monospace;
+    margin-right: 10px;
+}
+
+.transport-btn {
+    border: none;
+    color: #F80;
+    background-color: inherit;
+    font-size: 26pt;
+    margin: 0 10px;
+    cursor: pointer;
+}
+
+.transport-btn:hover {
+    color: #FF0;
+    background-color: inherit;
+}
+
+.transport-input {
+    background-color: inherit;
+    color: #F80;
+    margin: 2px;
+	border: 1px solid #F80;
+	width: 60px;
+	height: 20px;
+	font-family: monospace;
+}
+
+#play {
+    width: 26pt;
+}
+
+#bpm {
+	display: flex;
+	padding: 0 3px;
+}
+
+#bpm span:first-child{
+    flex-grow: 2;
+}
+
+.bpm-btn {
+    width: 12px;
+    cursor: pointer;
+    font-size: 10pt;
+    user-select: none;
+}
+
+#loop-length {
+    width: 68px;
+}
+
+.verticle {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
 .row {
 	grid-column-start: 1;
 	grid-column-end: 3;
@@ -195,10 +265,6 @@ p {
 	color: #333;
 }
 
-#bpm {
-	height: 20px;
-	width: 50px;
-}
 
 .input-knob {
 	cursor: pointer;

@@ -8,24 +8,33 @@
     <div id="content">
 
 		<h1>WAIVE-Online</h1>
-		<p>Welcome to the prototype browser-based interface to WAIVE: the AI that generates dance music from archieved sound materials.</p>
+		<p>Welcome to the prototype browser-based interface to WAIVE: the AI that generates dance music from archived sound materials.</p>
 		<p><i>This is an early WIP and may break/change at anytime.</i></p>
 
 		<div id="waive">
     		<div class="row">
-                <div id="play" class="btn">play</div>
-                <input type="number" min="60" max="200" id="bpm" value="110">
-                <select name="loop" id="loop-length">
-                	<option value="4">4</option>
-                	<option value="2">2</option>
-                	<option value="1">1</option>
-                	<option value="0.5">1/2</option>
-                	<option value="0.25">1/4</option>
-                	<option value="0.125">1/8</option>
-                	<option value="0.0625">1/16</option>
-                </select>
-                <div id="download-loop" class="btn">download loop</div>
-    		</div>
+        		<div id="transport-controls">
+                    <div id="play" class="transport-btn">▶</div>
+                    <span id="transport-time">0:0:0</span>
+                    <div class="verticle">
+                        <div id="bpm" class="transport-input">
+                            <span>110</span>
+                            <span class="bpm-btn">-</span>
+                            <span class="bpm-btn">+</span>
+                        </div>
+                        <select name="loop" id="loop-length" class="transport-input">
+                        	<option value="4">4</option>
+                        	<option value="2">2</option>
+                        	<option value="1">1</option>
+                        	<option value="0.5">1/2</option>
+                        	<option value="0.25">1/4</option>
+                        	<option value="0.125">1/8</option>
+                        	<option value="0.0625">1/16</option>
+                        </select>
+                    </div>
+                    <div id="download-loop" class="transport-btn">⤓</div>
+                </div>
+            </div>
 
 			<!--  ==== DRUM MACHINE ====  -->
     		<div class="row"><h2>Drum Machine</h2></div>
