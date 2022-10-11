@@ -81,6 +81,7 @@ p {
     font-size: 38pt;
     font-family: monospace;
     margin-right: 10px;
+    user-select: none;
 }
 
 .transport-btn {
@@ -105,6 +106,8 @@ p {
 	width: 60px;
 	height: 20px;
 	font-family: monospace;
+    cursor: pointer;
+    user-select: none;
 }
 
 #play {

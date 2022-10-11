@@ -86,7 +86,7 @@ let bassSynth = new Tone.MonoSynth({
 bassArrangement.synthCallback = (frequency, length, time) => {
     bassSynth.triggerAttackRelease(frequency, length, time);
     Tone.Draw.schedule(() => {
-        sendOSC("/audio/bass", Tone.Frequency(frequency, "hz").toMidi());
+        sendOSC("/audio/bass", Math.round(Tone.Frequency(frequency, "hz").toMidi()));
     }, time);
 };
 
