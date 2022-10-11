@@ -43,11 +43,11 @@ drumArrangement.synthCallback = (note, length, velocity, time) => {
 	if(drumBuffers[ins_name] && drumBuffers[ins_name].loaded){
 		drumPlayers[ins_name].start(time, 0, "16t");
 		drumPlayersVelocity[ins_name].gain.setValueAtTime(velocity, time);
-		Tone.Draw.schedule(() => {
-    		const a = DRUM_NAMES[ins_name];
-    		sendOSC("/audio/drum/"+a, velocity);
-		}, time);
 	}
+	Tone.Draw.schedule(() => {
+		const a = DRUM_NAMES[ins_name];
+		sendOSC("/audio/drum/"+a, velocity);
+	}, time);
 }
 
 let drumPool = [];
@@ -189,6 +189,7 @@ function sendOSC(address, ...data){
     if(!enableOSC){
         return
     }
+    console.log(address + " : " + data);
     var message = new OSC.Message(address, ...data);
     osc.send(message);
 }
