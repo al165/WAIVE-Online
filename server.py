@@ -19,6 +19,7 @@ ws = WaiveServer()
 ws.drum_generator_params["root"] = "../"
 ws.synth_generator_params["root"] = "../"
 ws.bassline_generator_params["root"] = "../"
+ws.melody_generator_params["root"] = "../"
 
 msg_q = ws.messageQueue
 r_q = ws.returnQueue

@@ -91,18 +91,46 @@ bassArrangement.synthCallback = (frequency, length, time) => {
 };
 
 //let soundPattern = [];
-let soundArrangement = new SoundArrangement();
+let soundArrangement = new BassArrangement(60, 4, "melody");
 let soundSamples = [];
 let soundPool = [];
 let selectedSoundBar = [];
 let soundPlayers = new Tone.Players({baseUrl: ROOT_URL + "sound/"});
 let soundLastHue = 0;
 
-soundArrangement.synthCallback = (time, fn, length) => {
-    if(soundPlayers.has(fn)){
-        soundPlayers.player(fn).start(time, 0, length);
-        sendOSC("/audio/sound", fn);
-    }
+// Temporary!
+let melodySynth = new Tone.MonoSynth({
+	"portamento": 0.2,
+	"oscillator":{
+    	"type": "sawtooth",
+	},
+	"envelope":{
+    	"attack": 0.01,
+    	"decay": 0.2,
+    	"sustain": 0.2,
+    	"release": 1.0,
+	},
+	"filterEnvelope":{
+    	"attack": 0.01,
+    	"decay": 0.2,
+    	"sustain": 0.2,
+    	"release": 1.0,
+    	"octaves": 3.0,
+	},
+	"filter":{
+    	"type": "lowpass",
+    	"Q": 1.0,
+	}
+});
+soundArrangement.synthCallback = (frequency, length, time) => {
+    //if(soundPlayers.has(fn)){
+        //soundPlayers.player(fn).start(time, 0, length);
+        //sendOSC("/audio/sound", fn);
+        melodySynth.triggerAttackRelease(frequency, length, time);
+        Tone.Draw.schedule(() => {
+            sendOSC("/audio/melody", Math.round(Tone.Frequency(frequency, "hz").toMidi()));
+        }, time);
+    //}
 }
 
 
@@ -189,7 +217,7 @@ function sendOSC(address, ...data){
     if(!enableOSC){
         return
     }
-    console.log(address + " : " + data);
+    //console.log(address + " : " + data);
     var message = new OSC.Message(address, ...data);
     osc.send(message);
 }
@@ -573,7 +601,8 @@ function setup(){
 	soundChannel.appendChild(container);
 	document.getElementById("sound-controls").appendChild(soundChannel);
 	soundChain = chain;
-	soundPlayers.connect(soundChain[0]);
+	melodySynth.connect(soundChain[0]);
+	//soundPlayers.connect(soundChain[0]);
 
 	// build BASS FXs chain
 	({ chain, container } = buildFXChain(BASS_FX_CHAIN));
@@ -936,6 +965,60 @@ window.onload = () => {
                 bassArrangement,
                 document.getElementById("bass-arrangement"),
                 selectedBassBar,
+                "*",
+                hue,
+            );
+    	})
+    }
+
+    document.getElementById("request-new-melody").onclick = () => {
+        apiCall(id, ROOT_URL, "requestMelody", {})
+        .then(data => {
+            if(!data || !data["ok"]){
+				console.log("no melody data");
+				return
+            }
+
+            recievedNewBar(
+                data,
+                BassBar,
+                soundPool,
+                document.getElementById("sampler-pool"),
+                soundArrangement,
+                document.getElementById("sampler-arrangement"),
+                selectedSoundBar,
+                "~ ",
+                soundLastHue,
+            );
+
+            soundLastHue += 55;
+        })
+    }
+
+    document.getElementById("request-variation-melody").onclick = () => {
+        if(!selectedSoundBar[0] || !selectedSoundBar[0].z){
+            console.log("not sending POST request (can not make variation)");
+            return
+        }
+
+        apiPostCall(id, ROOT_URL, "requestMelody", {
+            z: selectedSoundBar[0].z,
+        })
+    	.then(data => {
+            if(!data || !data["ok"]){
+				console.log("no melody data");
+				return
+            }
+
+            const hue = selectedSoundBar[0].hue + 10;
+            recievedNewBar(
+                data,
+                BassBar,
+                soundPool,
+                document.getElementById("sampler-pool"),
+                soundArrangement,
+                document.getElementById("sampler-arrangement"),
+                selectedSoundBar,
                 "*",
                 hue,
             );
