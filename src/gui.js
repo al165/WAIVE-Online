@@ -38,7 +38,7 @@ export function createKnob(name, params={}){
 	return { knobContainer, knob }
 }
 
-export function createFXKnob(name, params={}){
+export function createFXKnob(name, params={}, register={}){
 	let { knobContainer, knob } = createKnob(name, params);
 
 	if(params["fx"]){
@@ -52,7 +52,7 @@ export function createFXKnob(name, params={}){
 		}
 	}
 
-	return knobContainer;
+	return knobContainer;;
 }
 
 export function createSwitch(name, onchange){

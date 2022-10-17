@@ -15,9 +15,27 @@ if(args.length == 1){
 const config = {
     reciever: "ws",
     udpClient: {port, host},
-    udpServer: {host: "0.0.0.0"},
+    udpServer: {port: 9200, host: "localhost"},
+    wsServer: {port: 8080, host: "localhost"},
 };
 const osc = new OSC({plugin: new OSC.BridgePlugin(config)});
+
+osc.on("/*", (messege, rinfo) => {
+    //console.log(messege);
+    //console.log(rinfo);
+});
+
+osc.on("open", () => {
+    console.log("opened");
+});
+
+osc.on("close", () => {
+    console.log("closed");
+});
+
+osc.on("error", () => {
+    console.log(err);
+})
 
 osc.open();
 

@@ -90,7 +90,6 @@ bassArrangement.synthCallback = (frequency, length, time) => {
     }, time);
 };
 
-//let soundPattern = [];
 let soundArrangement = new NoteArrangement(4, 60, "melody");
 let soundSamples = [];
 let soundPool = [];
@@ -134,26 +133,6 @@ soundArrangement.synthCallback = (frequency, length, time) => {
     }, time);
 }
 
-
-// FX Chains
-const DRUM_FX_CHAIN = [
-	'compressor', 'eq3', 'vol', 'solo', 'meter',
-]
-
-const SOUND_FX_CHAIN = [
-	'delay', 'reverb', 'phaser', 'autofilter', 'filter', 'vol', 'solo', 'meter',
-]
-
-const BASS_FX_CHAIN = [
-	'eq3', 'vol', 'solo', 'meter',
-]
-
-const MASTER_FX_CHAIN = [
-	'meter', 'delay', 'reverb', 'filter', 'eq3', 'compressor', 'limiter', 'gain', 'meter'
-]
-
-const NON_BYPASSABLE = ['meter', 'vol', 'solo', 'gain'];
-
 const DRUMCOLORS = {
 	"00_KD": "#F44",
 	"01_SD": "#FA4",
@@ -190,11 +169,58 @@ let bassChain = [];
 let masterChain = [];
 let meters = [];
 
+// FX Chains
+const DRUM_FX_CHAIN = [
+	'compressor', 'eq3', 'vol', 'solo', 'meter',
+]
+
+const SOUND_FX_CHAIN = [
+	'delay', 'reverb', 'phaser', 'autofilter', 'filter', 'vol', 'solo', 'meter',
+]
+
+const BASS_FX_CHAIN = [
+	'eq3', 'vol', 'solo', 'meter',
+]
+
+const MASTER_FX_CHAIN = [
+	'meter', 'delay', 'reverb', 'filter', 'eq3', 'compressor', 'limiter', 'gain', 'meter'
+]
+
+const NON_BYPASSABLE = ['meter', 'vol', 'solo', 'gain'];
+
+let registeredControls = {};
+
+function registerControl(knob, ...address){
+    const addr = "/" + address.join("/");
+    console.log("registered: " + addr);
+    registeredControls[addr] = knob;
+}
+
+function registerFXChain(container, name="FX"){
+    try {
+        const fxBoxes = container.querySelectorAll(".fx-box")
+        for(const fxBox of fxBoxes){
+            const fx_name = fxBox.querySelector(".fx-name").innerText;
+            const fxKnobs = fxBox.querySelectorAll(".fx-knob");
+            for(const fxKnob of fxKnobs){
+                const parameter_name = fxKnob.querySelector(".fx-parameter").innerText;
+                const knob = fxKnob.querySelector("input");
+    			if(knob){
+                    registerControl(knob, name, fx_name, parameter_name);
+    			}
+            }
+        }
+	} catch {
+    	return;
+	}
+}
+
 const timelineCanvas = document.getElementById("timeline");
 
 const oscStatus = document.getElementById("osc-status");
 let enableOSC = false;
-const osc = new OSC();
+
+const osc = new OSC({ plugin: new OSC.WebsocketClientPlugin() });
 osc.on("open", () => {
     enableOSC = true;
     oscStatus.style.display = "block";
@@ -212,13 +238,25 @@ osc.on("error", (err) => {
     oscStatus.style.color = "#A00";
     console.log(err);
 })
+
+osc.on("/*", (message, rinfo) => {
+    const { address, args } = message;
+    if(registeredControls[address]){
+        //console.log(`${address} : ${args[0]}`);
+        const e = new Event("input");
+        registeredControls[address].value = args[0];
+        registeredControls[address].dispatchEvent(e);
+    } else {
+        console.log(`not processed: ${address} : ${args[0]}`);
+    }
+})
+
 osc.open();
 
 function sendOSC(address, ...data){
     if(!enableOSC){
         return
     }
-    //console.log(address + " : " + data);
     var message = new OSC.Message(address, ...data);
     osc.send(message);
 }
@@ -270,10 +308,16 @@ function buildFXChain(fxList, channels=2, bypass=false){
     	fxKnobs.classList.add("fx-knobs");
     	fxBox.appendChild(fxKnobs);
 
+    	let knob, knobContainer;
+
     	switch(fxType){
     		case "delay":
     			fx = new Tone.FeedbackDelay({feedback: 0.0, delayTime: 0.2, wet: 0.5, channels: channels});
-    			fxKnobs.appendChild(createFXKnob("feedback", {fx: fx, default: 0.0}));
+
+				knobContainer = createFXKnob("feedback", {fx: fx, default: 0.0}, registeredControls);
+				registerControl(knob, name, fxType, "feedback");
+    			fxKnobs.appendChild(knobContainer);
+
     			fxKnobs.appendChild(createFXKnob("delayTime", {fx: fx, default: 0.2}));
     			break;
     		case "reverb":
@@ -517,7 +561,8 @@ function buildDrumControls(){
 		channel.appendChild(sampleRequestControls);
 
 		// FX Chain
-		const { chain, container } = buildFXChain(DRUM_FX_CHAIN);
+		const { chain, container } = buildFXChain(DRUM_FX_CHAIN, 2, false);
+		registerFXChain(container, ins_name+"FX");
 		channel.appendChild(container);
 
 		document.getElementById("drum-channels").appendChild(channel);
@@ -551,21 +596,28 @@ function buildBassControls(){
 	knob.oninput = function(){
 		bassSynth.envelope.attack = this.value;
 	}
+	registerControl(knob, "bass", "attack");
 	synthKnobs.appendChild(knobContainer);
+
 	({ knobContainer, knob } = createKnob("decay", {default: 0.2}));
 	knob.oninput = function(){
 		bassSynth.envelope.decay= this.value;
 	}
+	registerControl(knob, "bass", "decay");
 	synthKnobs.appendChild(knobContainer);
+
 	({ knobContainer, knob } = createKnob("sustain", {default: 0.8}));
 	knob.oninput = function(){
 		bassSynth.envelope.sustain= this.value;
 	}
+	registerControl(knob, "bass", "sustain");
 	synthKnobs.appendChild(knobContainer);
+
 	({ knobContainer, knob } = createKnob("release", {default: 1.0}));
 	knob.oninput = function(){
 		bassSynth.envelope.release= this.value;
 	}
+	registerControl(knob, "bass", "release");
 	synthKnobs.appendChild(knobContainer);
 
 	// Portmento
@@ -573,6 +625,7 @@ function buildBassControls(){
 	knob.oninput = function(){
 		bassSynth.portamento= this.value;
 	}
+	registerControl(knob, "bass", "portamento");
 	synthKnobs.appendChild(knobContainer);
 
 	// filter
@@ -582,13 +635,16 @@ function buildBassControls(){
     	let val = this.value * (params.max - params.min) + params.min;
     	bassSynth.filterEnvelope.octaves = val;
 	}
+	registerControl(knob, "bass", "octaves");
 	synthKnobs.appendChild(knobContainer);
+
 	params = {default: 1.0, min: 0.2, max: 10.0};
 	({ knobContainer, knob } = createKnob("Q", params));
 	knob.oninput = function(){
     	let val = this.value * (params.max - params.min) + params.min;
     	bassSynth.set({filter: {Q: val}});
 	}
+	registerControl(knob, "bass", "q");
 	synthKnobs.appendChild(knobContainer);
 
 }
@@ -598,7 +654,8 @@ function setup(){
     buildBassControls();
 
     // build SYNTH FXs chain
-	let { chain, container } = buildFXChain(SOUND_FX_CHAIN);
+	let { chain, container } = buildFXChain(SOUND_FX_CHAIN, 2, false);
+	registerFXChain(container, "samplerFX");
 	const soundChannel = document.createElement("div");
 	soundChannel.appendChild(container);
 	document.getElementById("sound-controls").appendChild(soundChannel);
@@ -608,7 +665,8 @@ function setup(){
 	//soundPlayers.connect(soundChain[0]);
 
 	// build BASS FXs chain
-	({ chain, container } = buildFXChain(BASS_FX_CHAIN));
+	({ chain, container } = buildFXChain(BASS_FX_CHAIN, 2, false));
+	registerFXChain(container, "bassFX");
 	const bassChannel = document.createElement("div");
 	bassChannel.appendChild(container);
 	document.getElementById("bass-controls").appendChild(bassChannel);
@@ -617,6 +675,7 @@ function setup(){
 
     // build MASTER FXs chain
     ({ chain, container } = buildFXChain(MASTER_FX_CHAIN, 2, true));
+    registerFXChain(container, "masterFX");
 	const masterChannel = document.createElement("div");
 	masterChannel.classList.add("ins-channel");
 	masterChannel.appendChild(container);
@@ -1149,4 +1208,6 @@ window.onload = () => {
 
 	setup();
 	drawTimeline();
+
+	//console.log(registeredControls);
 }
