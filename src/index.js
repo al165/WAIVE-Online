@@ -11,7 +11,7 @@ window.MediaRecorder = AudioRecorder;
 
 import { createKnob, createFXKnob, createSelection, createSwitch, Meter, createBarElement } from './gui.js';
 import { download, getSamplePath, apiCall, apiPostCall, cleanName, makeSoundRange } from './utils.js';
-import { BypassableFX, DrumBar, SoundBar, BassBar, DrumArrangement, BassArrangement, SoundArrangement } from './waive_components.js';
+import { BypassableFX, DrumBar, SoundBar, BassBar, DrumArrangement, NoteArrangement } from './waive_components.js';
 
 const ROOT_URL = window.location.pathname;
 
@@ -54,7 +54,7 @@ let drumPool = [];
 let selectedDrumBar = [];
 let drumLastHue = 0;
 
-let bassArrangement = new BassArrangement();
+let bassArrangement = new NoteArrangement(4, 24, "bassline");
 let bassPool = [];
 let selectedBassBar = [];
 let bassLastHue = 0;
@@ -91,12 +91,12 @@ bassArrangement.synthCallback = (frequency, length, time) => {
 };
 
 //let soundPattern = [];
-let soundArrangement = new BassArrangement(60, 4, "melody");
+let soundArrangement = new NoteArrangement(4, 60, "melody");
 let soundSamples = [];
 let soundPool = [];
 let selectedSoundBar = [];
-let soundPlayers = new Tone.Players({baseUrl: ROOT_URL + "sound/"});
 let soundLastHue = 0;
+let soundSampleZ;
 
 // Temporary!
 let melodySynth = new Tone.MonoSynth({
@@ -107,7 +107,7 @@ let melodySynth = new Tone.MonoSynth({
 	"envelope":{
     	"attack": 0.01,
     	"decay": 0.2,
-    	"sustain": 0.2,
+    	"sustain": 0.5,
     	"release": 1.0,
 	},
 	"filterEnvelope":{
@@ -115,22 +115,23 @@ let melodySynth = new Tone.MonoSynth({
     	"decay": 0.2,
     	"sustain": 0.2,
     	"release": 1.0,
-    	"octaves": 3.0,
+    	"octaves": 1.0,
 	},
 	"filter":{
     	"type": "lowpass",
     	"Q": 1.0,
 	}
 });
+
+let sampler;
+
 soundArrangement.synthCallback = (frequency, length, time) => {
-    //if(soundPlayers.has(fn)){
-        //soundPlayers.player(fn).start(time, 0, length);
-        //sendOSC("/audio/sound", fn);
-        melodySynth.triggerAttackRelease(frequency, length, time);
-        Tone.Draw.schedule(() => {
-            sendOSC("/audio/melody", Math.round(Tone.Frequency(frequency, "hz").toMidi()));
-        }, time);
-    //}
+    if(sampler){
+        sampler.triggerAttackRelease(frequency, length, time);
+    }
+    Tone.Draw.schedule(() => {
+        sendOSC("/audio/melody", Math.round(Tone.Frequency(frequency, "hz").toMidi()));
+    }, time);
 }
 
 
@@ -276,7 +277,7 @@ function buildFXChain(fxList, channels=2, bypass=false){
     			fxKnobs.appendChild(createFXKnob("delayTime", {fx: fx, default: 0.2}));
     			break;
     		case "reverb":
-    			fx = new Tone.Reverb({wet: 0.7, decay: 1.0, channels: channels});
+    			fx = new Tone.Reverb({wet: 0.7, dry: 1.0, decay: 1.0, channels: channels});
     			fxKnobs.appendChild(createFXKnob("decay", {fx: fx, default: 1.0}));
     			fxKnobs.appendChild(createFXKnob("wet", {fx: fx, default: 0.7}));
     			break;
@@ -473,8 +474,9 @@ function buildDrumControls(){
                 	return
                 }
                 const ds = data["drum_samples"];
-                console.log(ds);
                 const z = data["z"];
+                console.log("requestDrumSample");
+                console.log(z);
                 drumSampleZs[ins_name] = z;
                 drumSampleToLoad[ins_name] = [ds];//drumSampleToLoad[ins_name].concat(ds);
                 updateDrumSamples();
@@ -601,7 +603,8 @@ function setup(){
 	soundChannel.appendChild(container);
 	document.getElementById("sound-controls").appendChild(soundChannel);
 	soundChain = chain;
-	melodySynth.connect(soundChain[0]);
+	//sampler.connect(soundChain[0]);
+	//melodySynth.connect(soundChain[0]);
 	//soundPlayers.connect(soundChain[0]);
 
 	// build BASS FXs chain
@@ -642,7 +645,7 @@ function updateDrumSamples(){
                 drumPlayers[ins_name].buffer = buffer;
             });
 
-			const label = `[ ${drumSampleToLoad[ins_name].length - 1} ] ${cleanName(fp[2])}`;
+			const label = `${cleanName(fp[2])}`;
 			drumSampleLabels[ins_name].innerText = label;
 			drumSampleURL[ins_name] = {url: url, fp: fp};
     	}
@@ -875,48 +878,6 @@ window.onload = () => {
     	})
     }
 
-    document.getElementById("request-sound-pattern").onclick = () => {
-        apiCall(id, ROOT_URL, "requestSynthData", {key: "trig"})
-        .then(data => {
-            if(!data || !data["ok"]){
-                console.log("no sound pattern data");
-            	return
-            }
-
-            const bar = recievedNewBar(
-                data,
-                SoundBar,
-                soundPool,
-                document.getElementById("sampler-pool"),
-                soundArrangement,
-                document.getElementById("sampler-arrangement"),
-                selectedSoundBar,
-                "~",
-                soundLastHue,
-            );
-
-            const overlay = document.createElement("div");
-            overlay.classList.add("bar-overlay");
-            overlay.innerText = bar.samples;
-            bar.addHoverElement(overlay);
-
-            soundLastHue += 55;
-            updateSoundSamples();
-        });
-    }
-
-	/*
-    document.getElementById("request-sound-samples").onclick = () => {
-        apiCall(id, ROOT_URL, "requestSynthData", {key: "synth"})
-        .then(data => {
-            if(!data || !data["ok"]){
-                console.log("no sound pattern data");
-            	return
-            }
-        });
-    }
-    */
-
     document.getElementById("request-new-bassline").onclick = () => {
         apiCall(id, ROOT_URL, "requestBassline", {})
         .then(data => {
@@ -991,6 +952,8 @@ window.onload = () => {
                 soundLastHue,
             );
 
+			console.log("requestNewMelody callback");
+			console.log(data.z);
             soundLastHue += 55;
         })
     }
@@ -1000,7 +963,6 @@ window.onload = () => {
             console.log("not sending POST request (can not make variation)");
             return
         }
-
         apiPostCall(id, ROOT_URL, "requestMelody", {
             z: selectedSoundBar[0].z,
         })
@@ -1024,6 +986,81 @@ window.onload = () => {
             );
     	})
     }
+
+    document.getElementById("request-sound-sample").onclick = () => {
+        apiPostCall(id, ROOT_URL, "requestSamplerSound", {})
+        .then(data => {
+            if(!data || !data["ok"]){
+				console.log("no sampler data");
+				return
+            }
+            const { sample, note, z } = data;
+
+			//console.log("requestSoundSample callback");
+            //console.log(z);
+
+			const fp = getSamplePath(sample);
+            const url = fp[1] + "/" + fp[2];
+
+            const note_val = parseInt(60+note);
+            let sampleMap = {};
+            sampleMap[note_val] = url;
+
+            const tempSampler = new Tone.Sampler({
+                urls: sampleMap,
+                baseUrl: ROOT_URL + "sample/",
+                onload: () => {
+                    console.log('loaded sample');
+                    if(sampler){
+                        sampler.dispose();
+                    }
+                    sampler = tempSampler;
+                    sampler.connect(soundChain[0]);
+                    soundSampleZ = z;
+                }
+            });
+
+        })
+    }
+
+    document.getElementById("request-variation-sound-sample").onclick = () => {
+        if(!soundSampleZ){
+            console.log("need to request sound")
+			return
+        }
+		//console.log(soundSampleZ);
+        apiPostCall(id, ROOT_URL, "requestSamplerSound", {variaion: true, z: soundSampleZ})
+        .then(data => {
+            if(!data || !data["ok"]){
+				console.log("no sampler data");
+				return
+            }
+            const { sample, note, z } = data;
+
+			const fp = getSamplePath(sample);
+            const url = fp[1] + "/" + fp[2];
+
+            const note_val = parseInt(60+note);
+            let sampleMap = {};
+            sampleMap[note_val] = url;
+
+            const tempSampler = new Tone.Sampler({
+                urls: sampleMap,
+                baseUrl: ROOT_URL + "sample/",
+                onload: () => {
+                    console.log('loaded sample');
+                    if(sampler){
+                        sampler.dispose();
+                    }
+                    sampler = tempSampler;
+                    sampler.connect(soundChain[0]);
+                    soundSampleZ = z;
+                }
+            });
+
+        })
+    }
+
 
     play_btn.onclick = () => {
         Tone.start();
@@ -1063,7 +1100,6 @@ window.onload = () => {
 		drawTimeline();
     }
     document.getElementById("loop-length").value = "4";
-
     document.getElementById("download-loop").onclick = () => {
 		recordLoop();
     }
@@ -1094,8 +1130,6 @@ window.onload = () => {
     	const midi = bassArrangement.toMidi();
 		download(midi, "bassline.mid");
 	}
-
-	Tone.Transport.schedule(nextBar, "0:0:15");
 
 	const OSCloop = new Tone.Loop((time) => {
     	const now = Tone.Transport.position.split(":");

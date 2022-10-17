@@ -1,12 +1,12 @@
 import os
 import sys
-from flask import Flask, render_template, request, send_from_directory, jsonify
+from flask import Flask, render_template, request, send_from_directory
 
 sys.path.extend(["../../REALTIME/", "../../COMMON_UTILS/"])
 from waive_server import WaiveServer
 
 DRUM_ROOT = "../../SAMPLE_IDENTIFICATION/DRUM_SAMPLES/"
-SOUNDS_ROOT = "../../SAMPLE_IDENTIFICATION/SYNTH_SAMPLES/"
+SOUNDS_ROOT = "../../SAMPLE_IDENTIFICATION/SYNTH_SAMPLES_WAV/"
 
 app = Flask(
     __name__,
@@ -26,12 +26,14 @@ r_q = ws.returnQueue
 
 ws.start()
 
+
 @app.route("/apipost", methods=["POST"])
 def apiPostRequest():
     data = request.get_json()
     msg_q.put((data['type'], data['id'], data['data']))
     m_type, data = r_q.get()
     return data
+
 
 @app.route("/")
 def index():
@@ -62,6 +64,16 @@ def getDrumAudioFile(category, folder, fn):
 def getSoundAudioFile(category, folder, fn):
     return send_from_directory(
         os.path.join(SOUNDS_ROOT, category, folder),
+        fn,
+        as_attachment=False,
+    )
+
+
+@app.route("/sample/<category>/<fn>")
+def getSampleAudio(category, fn):
+    print(os.path.join(SOUNDS_ROOT, category))
+    return send_from_directory(
+        os.path.join(SOUNDS_ROOT, category),
         fn,
         as_attachment=False,
     )
