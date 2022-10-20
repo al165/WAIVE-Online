@@ -33,7 +33,7 @@ osc.on("close", () => {
     console.log("closed");
 });
 
-osc.on("error", () => {
+osc.on("error", (err) => {
     console.log(err);
 })
 

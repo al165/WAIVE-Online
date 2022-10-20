@@ -1,0 +1,70 @@
+#N canvas 0 50 450 300 router 1;
+#N canvas 0 50 450 250 (subpatch) 0;
+#X text 0 0 plugdatainfo <?xml version="1.0" encoding="UTF-8"?> <PlugDataInfo/>
+;
+#X coords 0 1 100 -1 1 1 1;
+#X restore 0 0 graph;
+#X obj 368 203 tgl 25 0 empty empty empty 17 7 0 10 #191919 #c8c8c8
+#ffffff 0 1;
+#X obj 276 351 spigot;
+#X obj 298 379 spigot;
+#X obj 398 203 tgl 25 0 empty empty empty 17 7 0 10 #191919 #c8c8c8
+#ffffff 0 1;
+#X obj 428 203 tgl 25 0 empty empty empty 17 7 0 10 #191919 #c8c8c8
+#ffffff 0 1;
+#X obj 458 203 tgl 25 0 empty empty empty 17 7 0 10 #191919 #c8c8c8
+#ffffff 0 1;
+#X obj 368 233 tgl 25 0 empty empty empty 17 7 0 10 #191919 #c8c8c8
+#ffffff 0 1;
+#X obj 398 233 tgl 25 0 empty empty empty 17 7 0 10 #191919 #c8c8c8
+#ffffff 0 1;
+#X obj 428 233 tgl 25 0 empty empty empty 17 7 0 10 #191919 #c8c8c8
+#ffffff 0 1;
+#X obj 458 233 tgl 25 0 empty empty empty 17 7 0 10 #191919 #c8c8c8
+#ffffff 0 1;
+#X obj 336 351 spigot;
+#X obj 358 379 spigot;
+#X obj 396 351 spigot;
+#X obj 418 379 spigot;
+#X obj 456 351 spigot;
+#X obj 478 379 spigot;
+#X obj 256 201 inlet;
+#X obj 203 444 outlet;
+#X obj 253 444 outlet;
+#X obj 303 444 outlet;
+#X obj 353 444 outlet;
+#X obj 403 444 outlet;
+#X obj 453 444 outlet;
+#X obj 503 444 outlet;
+#X obj 553 444 outlet;
+#N canvas 0 50 450 250 (subpatch) 1;
+#N canvas 0 50 450 250 (subpatch) 0;
+#X text 0 0 plugdatainfo;
+#X coords 0 1 100 -1 1 1 1;
+#X restore 0 0 graph;
+#X coords 0 1 100 -1 128 68 1;
+#X restore 362 197 graph;
+#X connect 1 0 2 1;
+#X connect 2 0 18 0;
+#X connect 3 0 19 0;
+#X connect 4 0 3 1;
+#X connect 5 0 11 1;
+#X connect 6 0 12 1;
+#X connect 7 0 13 1;
+#X connect 8 0 14 1;
+#X connect 9 0 15 1;
+#X connect 10 0 16 1;
+#X connect 11 0 20 0;
+#X connect 12 0 21 0;
+#X connect 13 0 22 0;
+#X connect 14 0 23 0;
+#X connect 15 0 24 0;
+#X connect 16 0 25 0;
+#X connect 17 0 2 0;
+#X connect 17 0 11 0;
+#X connect 17 0 3 0;
+#X connect 17 0 12 0;
+#X connect 17 0 13 0;
+#X connect 17 0 14 0;
+#X connect 17 0 15 0;
+#X connect 17 0 16 0;

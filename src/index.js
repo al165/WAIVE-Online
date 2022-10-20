@@ -41,7 +41,7 @@ const drumSampleZs = {};
 drumArrangement.synthCallback = (note, length, velocity, time) => {
     const ins_name = DRUM_MIDI_NAME[note];
 	if(drumBuffers[ins_name] && drumBuffers[ins_name].loaded){
-		drumPlayers[ins_name].start(time, 0, "16t");
+		drumPlayers[ins_name].start(time, 0);
 		drumPlayersVelocity[ins_name].gain.setValueAtTime(velocity, time);
 	}
 	Tone.Draw.schedule(() => {
@@ -313,11 +313,7 @@ function buildFXChain(fxList, channels=2, bypass=false){
     	switch(fxType){
     		case "delay":
     			fx = new Tone.FeedbackDelay({feedback: 0.0, delayTime: 0.2, wet: 0.5, channels: channels});
-
-				knobContainer = createFXKnob("feedback", {fx: fx, default: 0.0}, registeredControls);
-				registerControl(knob, name, fxType, "feedback");
-    			fxKnobs.appendChild(knobContainer);
-
+    			fxKnobs.appendChild(createFXKnob("feedback", {fx: fx, default: 0.0}, registeredControls));
     			fxKnobs.appendChild(createFXKnob("delayTime", {fx: fx, default: 0.2}));
     			break;
     		case "reverb":
@@ -533,7 +529,7 @@ function buildDrumControls(){
         trigBtn.innerText = "▶";
         trigBtn.onclick = () => {
 			if(drumBuffers[ins_name].loaded){
-    			drumPlayers[ins_name].start(0, 0, "16t");
+    			drumPlayers[ins_name].start(0, 0);
 			}
         }
         sampleRequestControls.appendChild(trigBtn);
@@ -1177,6 +1173,7 @@ window.onload = () => {
         drumArrangement.updatePart();
         drawArrangementView(drumArrangement, document.getElementById("drum-arrangement"));
     }
+    registerControl(drumThresholdKnob, "drums", "threshold");
 
 	const drumMidiDownload = document.getElementById("drum-midi-download");
 	drumMidiDownload.onclick = function() {
