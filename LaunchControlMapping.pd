@@ -1,0 +1,302 @@
+#N canvas 827 239 527 327 12;
+#N canvas 0 50 450 250 (subpatch) 0;
+#X text 0 0 plugdatainfo <?xml version="1.0" encoding="UTF-8"?> <PlugDataInfo/>
+;
+#X coords 0 1 100 -1 1 1 1;
+#X restore 0 0 graph;
+#X obj 20 12 cnv 281 281 45 empty empty WAIVE-Online 20 22 0 32 #a8a8a8
+#5a5a5a 0;
+#X obj 20 56 cnv 281 281 34 empty empty Launch\ Contol\ XL 20 18 0
+18 #c8c8c8 #5a5a5a 0;
+#N canvas 0 50 450 300 setLED 1;
+#N canvas 0 50 450 250 (subpatch) 0;
+#X text 0 0 plugdatainfo <?xml version="1.0" encoding="UTF-8"?> <PlugDataInfo/>
+;
+#X coords 0 1 100 -1 1 1 1;
+#X restore 0 0 graph;
+#X obj 102 49 inlet;
+#X obj 102 87 route green red chan;
+#X obj 138 476 note.out;
+#X obj 138 411 nbx 4 21 -1e+37 1e+37 0 0 empty empty empty 0 -8 0 10
+#e4e4e4 #5a5a5a #5a5a5a 0 256;
+#X obj 58 234 * 16;
+#X obj 58 301 + 12;
+#X obj 58 202 nbx 4 21 -1e+37 1e+37 0 0 empty empty empty 0 -8 0 10
+#e4e4e4 #5a5a5a #5a5a5a 0 256;
+#X obj 118 202 nbx 4 21 -1e+37 1e+37 0 0 empty empty empty 0 -8 0 10
+#e4e4e4 #5a5a5a #5a5a5a 0 256;
+#X obj 58 267 +, f 6;
+#X obj 118 234 t b f;
+#X obj 58 338 t b f;
+#X obj 194 411 nbx 4 21 -1e+37 1e+37 0 0 empty empty empty 0 -8 0 10
+#e4e4e4 #5a5a5a #5a5a5a 0 256;
+#X obj 248 411 nbx 4 21 -1e+37 1e+37 0 0 empty empty empty 0 -8 0 10
+#e4e4e4 #5a5a5a #5a5a5a 0 256;
+#X obj 138 510 midiout;
+#X text 542 304 red:;
+#X text 542 324 green:;
+#X obj 598 305 nbx 4 21 -1e+37 1e+37 0 0 empty empty empty 0 -8 0 10
+#e4e4e4 #5a5a5a #5a5a5a 0 256;
+#X obj 598 325 nbx 4 21 -1e+37 1e+37 0 0 empty empty empty 0 -8 0 10
+#e4e4e4 #5a5a5a #5a5a5a 0 256;
+#X obj 598 285 nbx 4 21 -1e+37 1e+37 0 0 empty empty empty 0 -8 0 10
+#e4e4e4 #5a5a5a #5a5a5a 0 256;
+#X text 542 284 chan:;
+#X obj 598 265 nbx 4 21 -1e+37 1e+37 0 0 empty empty empty 0 -8 0 10
+#e4e4e4 #5a5a5a #5a5a5a 0 256;
+#X text 542 264 num:;
+#X connect 1 0 2 0;
+#X connect 2 0 7 0;
+#X connect 2 0 18 0;
+#X connect 2 1 8 0;
+#X connect 2 1 17 0;
+#X connect 2 2 13 0;
+#X connect 2 2 19 0;
+#X connect 2 3 4 0;
+#X connect 2 3 21 0;
+#X connect 3 0 14 0;
+#X connect 4 0 3 0;
+#X connect 5 0 9 0;
+#X connect 6 0 11 0;
+#X connect 7 0 5 0;
+#X connect 8 0 10 0;
+#X connect 9 0 6 0;
+#X connect 10 0 7 0;
+#X connect 10 1 9 1;
+#X connect 11 0 4 0;
+#X connect 11 1 12 0;
+#X connect 12 0 3 1;
+#X connect 13 0 3 2;
+#X coords 0 0 1 1 105 93 2 545 259;
+#X restore 67 788 pd setLED;
+#X obj 67 751 r led;
+#N canvas 0 50 450 300 setup 0;
+#N canvas 0 50 450 250 (subpatch) 0;
+#X text 0 0 plugdatainfo <?xml version="1.0" encoding="UTF-8"?> <PlugDataInfo/>
+;
+#X coords 0 1 100 -1 1 1 1;
+#X restore 0 0 graph;
+#X obj 108 122 loadbang;
+#X msg 108 225 13 \, chan 1 \, red 3 \, green 0 \, 14 \, 15, f 29
+;
+#X msg 318 225 29 \, chan 1 \, red 3 \, green 1 \, 30 \, 31, f 30
+;
+#X obj 801 276 s led;
+#X msg 538 225 45 \, chan 1 \, red 3 \, green 3 \, 46 \, 47, f 30
+;
+#X msg 758 225 61 \, chan 1 \, red 3 \, green 0 \, 62 \, 63, f 30
+;
+#X msg 978 225 77 \, chan 1 \, red 3 \, green 3 \, 78 \, 79, f 30
+;
+#X msg 1198 225 93 \, chan 1 \, red 0 \, green 3 \, 94 \, 95 \, 109
+\, 110 \, 111 \, 125 \, 126 \, 127, f 53;
+#X obj 110 154 t b b b b b b;
+#X obj 182 122 bng 25 250 50 0 empty empty empty 17 7 0 10 #e4e4e4
+#828282 #5a5a5a;
+#X connect 1 0 9 0;
+#X connect 2 0 4 0;
+#X connect 3 0 4 0;
+#X connect 5 0 4 0;
+#X connect 6 0 4 0;
+#X connect 7 0 4 0;
+#X connect 8 0 4 0;
+#X connect 9 0 2 0;
+#X connect 9 1 3 0;
+#X connect 9 2 5 0;
+#X connect 9 3 6 0;
+#X connect 9 4 7 0;
+#X connect 9 5 8 0;
+#X connect 10 0 9 0;
+#X restore 54 173 pd setup;
+#X obj 411 593 netsend -u -b;
+#X msg 650 613 disconnect, f 12;
+#X msg 627 580 connect localhost 9200, f 22;
+#X obj 627 546 loadbang;
+#X obj 275 127 midiin;
+#X obj 275 164 ctl.in 1, f 13;
+#X obj 275 202 rescale;
+#X obj 275 239 swap, f 8;
+#X obj 275 271 pack f f;
+#X obj 371 320 route 13 14 15 16 17 18 19 20;
+#X text 344 290 Faders;
+#X text 436 290 SendA;
+#X obj 571 320 route 29 30 31 32 33 34 35 36;
+#X text 642 290 SendB;
+#X text 760 290 Pan/Device;
+#X text 371 225 User 1;
+#N canvas 0 50 450 300 faders 1;
+#N canvas 0 50 450 250 (subpatch) 0;
+#X text 0 0 plugdatainfo <?xml version="1.0" encoding="UTF-8"?> <PlugDataInfo/>
+;
+#X coords 0 1 100 -1 1 1 1;
+#X restore 0 0 graph;
+#X obj 133 210 inlet;
+#X obj 170 344 vsl 8 61 0 1 0 0 empty empty empty 0 -9 0 10 #e4e4e4
+#828282 #5a5a5a 0 1;
+#X obj 180 344 vsl 8 61 0 1 0 0 empty empty empty 0 -9 0 10 #e4e4e4
+#828282 #5a5a5a 0 1;
+#X obj 190 344 vsl 8 61 0 1 0 0 empty empty empty 0 -9 0 10 #e4e4e4
+#828282 #5a5a5a 0 1;
+#X obj 200 344 vsl 8 61 0 1 0 0 empty empty empty 0 -9 0 10 #e4e4e4
+#828282 #5a5a5a 0 1;
+#X obj 210 344 vsl 8 61 0 1 0 0 empty empty empty 0 -9 0 10 #e4e4e4
+#828282 #5a5a5a 0 1;
+#X obj 220 344 vsl 8 61 0 1 0 0 empty empty empty 0 -9 0 10 #e4e4e4
+#828282 #5a5a5a 0 1;
+#X obj 230 344 vsl 8 61 0 1 0 0 empty empty empty 0 -9 0 10 #e4e4e4
+#828282 #5a5a5a 0 1;
+#X obj 240 344 vsl 8 61 0 1 0 0 empty empty empty 0 -9 0 10 #e4e4e4
+#828282 #5a5a5a 0 1;
+#X obj 133 274 route 77 78 79 80 81 82 83 84;
+#X obj 331 575 outlet;
+#X obj 589 327 outlet;
+#X obj 87 490 oscformat -f f 00_KDFX vol volume, f 17;
+#X obj 210 490 oscformat -f f 01_SDFX vol volume, f 17;
+#X obj 331 490 oscformat -f f 02_HHFX vol volume, f 17;
+#X obj 455 490 oscformat -f f bassFX vol volume, f 17;
+#X obj 583 490 oscformat -f f samplerFX vol volume, f 17;
+#X obj 710 490 oscformat -f f masterFX gain gain, f 17;
+#X connect 1 0 10 0;
+#X connect 2 0 13 0;
+#X connect 3 0 14 0;
+#X connect 4 0 15 0;
+#X connect 5 0 16 0;
+#X connect 6 0 17 0;
+#X connect 9 0 18 0;
+#X connect 10 0 2 0;
+#X connect 10 1 3 0;
+#X connect 10 2 4 0;
+#X connect 10 3 5 0;
+#X connect 10 4 6 0;
+#X connect 10 5 7 0;
+#X connect 10 6 8 0;
+#X connect 10 7 9 0;
+#X connect 10 8 12 0;
+#X connect 13 0 11 0;
+#X connect 14 0 11 0;
+#X connect 15 0 11 0;
+#X connect 16 0 11 0;
+#X connect 17 0 11 0;
+#X connect 18 0 11 0;
+#X coords 0 0 1 1 91 72 2 164 338;
+#X restore 275 320 pd faders;
+#N canvas 0 50 450 300 pan 1;
+#N canvas 0 50 450 250 (subpatch) 0;
+#X text 0 0 plugdatainfo <?xml version="1.0" encoding="UTF-8"?> <PlugDataInfo/>
+;
+#X coords 0 1 100 -1 1 1 1;
+#X restore 0 0 graph;
+#X obj 97 209 inlet;
+#X obj 543 301 outlet;
+#X obj 248 250 route 49 50 51 52 53 54 55 56;
+#X obj 288 283 hsl 34 9 0 1 0 0 empty empty empty -2 -8 0 10 #e4e4e4
+#828282 #5a5a5a 0 1;
+#X obj 288 293 hsl 34 9 0 1 0 0 empty empty empty -2 -8 0 10 #e4e4e4
+#828282 #5a5a5a 0 1;
+#X obj 288 313 hsl 34 9 0 1 0 0 empty empty empty -2 -8 0 10 #e4e4e4
+#828282 #5a5a5a 0 1;
+#X obj 288 323 hsl 34 9 0 1 0 0 empty empty empty -2 -8 0 10 #e4e4e4
+#828282 #5a5a5a 0 1;
+#X obj 288 333 hsl 34 9 0 1 0 0 empty empty empty -2 -8 0 10 #e4e4e4
+#828282 #5a5a5a 0 1;
+#X obj 288 343 hsl 34 9 0 1 0 0 empty empty empty -2 -8 0 10 #e4e4e4
+#828282 #5a5a5a 0 1;
+#X obj 288 353 hsl 34 9 0 1 0 0 empty empty empty -2 -8 0 10 #e4e4e4
+#828282 #5a5a5a 0 1;
+#X obj 46 460 oscformat -f f 00_KDFX vol pan, f 17;
+#X obj 174 460 oscformat -f f 01_SDFX vol pan, f 17;
+#X obj 298 460 oscformat -f f 02_HHFX vol pan, f 17;
+#X obj 288 303 hsl 34 9 0 1 0 0 empty empty empty -2 -8 0 10 #e4e4e4
+#828282 #5a5a5a 0 1;
+#X obj 368 560 outlet;
+#X obj 424 460 oscformat -f f bassFX vol pan, f 17;
+#X obj 555 460 oscformat -f f samplerFX vol pan, f 17;
+#X obj 686 460 oscformat -f f masterFX vol pan, f 17;
+#X connect 1 0 3 0;
+#X connect 3 0 4 0;
+#X connect 3 1 5 0;
+#X connect 3 2 14 0;
+#X connect 3 3 6 0;
+#X connect 3 4 7 0;
+#X connect 3 5 8 0;
+#X connect 3 6 9 0;
+#X connect 3 7 10 0;
+#X connect 3 8 2 0;
+#X connect 4 0 11 0;
+#X connect 5 0 12 0;
+#X connect 6 0 16 0;
+#X connect 7 0 17 0;
+#X connect 10 0 18 0;
+#X connect 11 0 15 0;
+#X connect 12 0 15 0;
+#X connect 13 0 15 0;
+#X connect 14 0 13 0;
+#X connect 16 0 15 0;
+#X connect 17 0 15 0;
+#X connect 18 0 15 0;
+#X coords 0 0 1 1 47 91 2 282 277;
+#X restore 777 320 pd pan;
+#X obj 1141 147 hsl 128 17 0 1 0 0 empty empty empty -2 -8 0 10 #e4e4e4
+#828282 #5a5a5a 0 1;
+#X obj 1077 336 nbx 4 21 -1e+37 1e+37 0 0 empty empty empty 0 -8 0
+10 #e4e4e4 #5a5a5a #5a5a5a 0 256;
+#X obj 1076 273 floor;
+#X obj 1224 336 nbx 4 21 -1e+37 1e+37 0 0 empty empty empty 0 -8 0
+10 #e4e4e4 #5a5a5a #5a5a5a 0 256;
+#X obj 1223 273 floor;
+#X msg 1008 519 \$1 \, chan 1 \, red \$2 \, green \$3, f 26;
+#X obj 1009 437 pack f f f;
+#X obj 958 399 nbx 4 21 -1e+37 1e+37 0 0 empty empty empty 0 -8 0 10
+#e4e4e4 #5a5a5a #5a5a5a 0 256;
+#X obj 1071 366 t b f;
+#X obj 1126 365 t b f;
+#X obj 1007 555 s led;
+#X msg 1215 471 41 \, chan 1 \, red 1 \, green 0, f 23;
+#X obj 804 459 print;
+#X obj 1071 212 rescale -clip 0 0.9 3 0;
+#X obj 1218 212 rescale -clip 0.1 1 0 3;
+#X obj 940 224 vsl 17 128 0 127 0 0 empty empty empty 0 -9 0 10 #e4e4e4
+#828282 #5a5a5a 0 1;
+#X obj 382 166 note.in, f 18;
+#X obj 380 196 nbx 4 21 -1e+37 1e+37 0 0 empty empty empty 0 -8 0 10
+#e4e4e4 #5a5a5a #5a5a5a 0 256;
+#X obj 440 196 nbx 4 21 -1e+37 1e+37 0 0 empty empty empty 0 -8 0 10
+#e4e4e4 #5a5a5a #5a5a5a 0 256;
+#X connect 4 0 3 0;
+#X connect 7 0 6 0;
+#X connect 8 0 6 0;
+#X connect 9 0 8 0;
+#X connect 10 0 11 0;
+#X connect 10 0 40 0;
+#X connect 11 0 12 0;
+#X connect 11 1 13 1;
+#X connect 12 0 13 0;
+#X connect 12 0 24 0;
+#X connect 13 0 14 0;
+#X connect 13 1 14 1;
+#X connect 14 0 22 0;
+#X connect 15 8 18 0;
+#X connect 18 8 23 0;
+#X connect 22 0 6 0;
+#X connect 22 1 15 0;
+#X connect 23 0 6 0;
+#X connect 23 1 36 0;
+#X connect 24 0 37 0;
+#X connect 24 0 38 0;
+#X connect 25 0 32 0;
+#X connect 26 0 25 0;
+#X connect 27 0 33 0;
+#X connect 28 0 27 0;
+#X connect 29 0 34 0;
+#X connect 30 0 29 0;
+#X connect 31 0 30 0;
+#X connect 32 0 31 0;
+#X connect 32 1 30 1;
+#X connect 33 0 31 0;
+#X connect 33 1 30 2;
+#X connect 35 0 34 0;
+#X connect 37 0 26 0;
+#X connect 38 0 28 0;
+#X connect 39 0 31 0;
+#X connect 40 0 41 0;
+#X connect 40 1 42 0;
