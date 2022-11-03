@@ -124,6 +124,11 @@ let melodySynth = new Tone.MonoSynth({
 
 let sampler;
 
+let samplerParams = {
+    attack: 0.0,
+    release: 0.0,
+}
+
 soundArrangement.synthCallback = (frequency, length, time) => {
     if(sampler){
         sampler.triggerAttackRelease(frequency, length, time);
@@ -171,15 +176,15 @@ let meters = [];
 
 // FX Chains
 const DRUM_FX_CHAIN = [
-	'compressor', 'eq3', 'vol', 'solo', 'meter',
+	'compressor', 'eq3', 'channel', 'meter',
 ]
 
 const SOUND_FX_CHAIN = [
-	'delay', 'reverb', 'phaser', 'autofilter', 'filter', 'vol', 'solo', 'meter',
+	'delay', 'reverb', 'filter', 'channel', 'meter',
 ]
 
 const BASS_FX_CHAIN = [
-	'eq3', 'vol', 'solo', 'meter',
+	'delay', 'eq3', 'channel', 'meter',
 ]
 
 const MASTER_FX_CHAIN = [
@@ -190,29 +195,50 @@ const NON_BYPASSABLE = ['meter', 'vol', 'solo', 'gain'];
 
 let registeredControls = {};
 
-function registerControl(knob, ...address){
+function registerControl(input, type, ...address){
     const addr = "/" + address.join("/");
-    console.log("registered: " + addr);
-    registeredControls[addr] = knob;
+    console.log("registered " + type + " control: " + addr);
+    registeredControls[addr] = {
+        type: type,
+        input: input,
+    };
 }
 
 function registerFXChain(container, name="FX"){
-    try {
-        const fxBoxes = container.querySelectorAll(".fx-box")
-        for(const fxBox of fxBoxes){
-            const fx_name = fxBox.querySelector(".fx-name").innerText;
-            const fxKnobs = fxBox.querySelectorAll(".fx-knob");
-            for(const fxKnob of fxKnobs){
-                const parameter_name = fxKnob.querySelector(".fx-parameter").innerText;
-                const knob = fxKnob.querySelector("input");
-    			if(knob){
-                    registerControl(knob, name, fx_name, parameter_name);
-    			}
+    const fxBoxes = container.querySelectorAll(".fx-box")
+    for(const fxBox of fxBoxes){
+        const fx_name = fxBox.querySelector(".fx-name").innerText;
+        const fxKnobs = fxBox.querySelectorAll(".fx-knob");
+        for(const fxKnob of fxKnobs){
+            let parameter_name;
+            try{
+                parameter_name = fxKnob.querySelector(".fx-parameter").innerText;
+            } catch {
+                continue
             }
+            const knob = fxKnob.querySelector("input");
+			if(!knob){
+    			continue
+			}
+
+			if(knob.type == "checkbox"){
+				registerControl((args) => {
+    				if(args[0] == 1){
+        				knob.checked = false;
+    				} else {
+        				knob.checked = true;
+    				}
+    				knob.click();
+				}, "trigger", name, fx_name, parameter_name);
+			} else {
+                registerControl(knob, "value", name, fx_name, parameter_name);
+			}
         }
-	} catch {
-    	return;
-	}
+        const switches = fxBox.querySelectorAll(".input-switch");
+        for(const sw of switches){
+            //const parameter_name =
+        }
+    }
 }
 
 const timelineCanvas = document.getElementById("timeline");
@@ -241,11 +267,24 @@ osc.on("error", (err) => {
 
 osc.on("/*", (message, rinfo) => {
     const { address, args } = message;
+    //console.log(address);
     if(registeredControls[address]){
-        //console.log(`${address} : ${args[0]}`);
-        const e = new Event("input");
-        registeredControls[address].value = args[0];
-        registeredControls[address].dispatchEvent(e);
+        let rc = registeredControls[address];
+        if(rc.type == "value"){
+            const e = new Event("input");
+            rc.input.value = args[0];
+            rc.input.dispatchEvent(e);
+        } else if(rc.type == "trigger"){
+			rc.input(args);
+        } else if(rc.type == "selection"){
+            let e = new Event("input");
+            let options = rc.input.getElementsByTagName("option");
+            let idx = Math.floor((options.length - 1) * (1 - args[0]));
+            options[idx].selected = 'selected';
+            rc.input.dispatchEvent(e);
+        } else {
+            console.log("unknown type " + rc.type);
+        }
     } else {
         console.log(`not processed: ${address} : ${args[0]}`);
     }
@@ -270,6 +309,10 @@ function drawTimeline(){
     ctx.fillStyle = "#AAA";
     ctx.fillRect(0, 0, width, height);
 
+    ctx.fillStyle = "#F80";
+    //ctx.lineWidth = 3;
+    ctx.fillRect(0, 0, width * loopLength / 4, height);
+
     ctx.lineWidth = 1;
 	ctx.strokeStyle = "black";
     for(let i = 0; i < 4; i++){
@@ -278,9 +321,6 @@ function drawTimeline(){
 		ctx.stroke();
     }
 
-    ctx.strokeStyle = "#F80";
-    ctx.lineWidth = 3;
-    ctx.strokeRect(0, 0, width * loopLength / 4, height);
 
 	ctx.fillStyle = "black";
     for(let i = 0; i < 4; i++){
@@ -308,17 +348,18 @@ function buildFXChain(fxList, channels=2, bypass=false){
     	fxKnobs.classList.add("fx-knobs");
     	fxBox.appendChild(fxKnobs);
 
-    	let knob, knobContainer;
+    	let knob, knobContainer, sw;
 
     	switch(fxType){
     		case "delay":
     			fx = new Tone.FeedbackDelay({feedback: 0.0, delayTime: 0.2, wet: 0.5, channels: channels});
     			fxKnobs.appendChild(createFXKnob("feedback", {fx: fx, default: 0.0}, registeredControls));
-    			fxKnobs.appendChild(createFXKnob("delayTime", {fx: fx, default: 0.2}));
+    			fxKnobs.appendChild(createSelection("delayTime", ["64n", "32n", "16n", "8n"], fx));
+    			//fxKnobs.appendChild(createFXKnob("delayTime", {fx: fx, default: 0.2}));
     			break;
     		case "reverb":
     			fx = new Tone.Reverb({wet: 0.7, dry: 1.0, decay: 1.0, channels: channels});
-    			fxKnobs.appendChild(createFXKnob("decay", {fx: fx, default: 1.0}));
+    			fxKnobs.appendChild(createFXKnob("decay", {fx: fx, default: 1.0, min: 0.01, max: 10}));
     			fxKnobs.appendChild(createFXKnob("wet", {fx: fx, default: 0.7}));
     			break;
     		case "compressor":
@@ -335,7 +376,7 @@ function buildFXChain(fxList, channels=2, bypass=false){
     		case "filter":
     			fx = new Tone.Filter({frequency: 2000, type: "lowpass", Q: 1.0, channels: channels});
     			fxKnobs.appendChild(createSelection("type", ["lowpass", "highpass", "bandpass"], fx));
-    			fxKnobs.appendChild(createFXKnob("frequency", {fx: fx, default: 2000, min: 40, max: 15000}));
+    			fxKnobs.appendChild(createFXKnob("frequency", {fx: fx, default: 2000, min: 80, max: 15000}));
     			fxKnobs.appendChild(createFXKnob("Q", {fx: fx, default: 1.0, min: 0, max: 5}));
     			break;
     		case "autofilter":
@@ -369,8 +410,31 @@ function buildFXChain(fxList, channels=2, bypass=false){
     			break;
     		case "solo":
     			fx = new Tone.Solo();
-    			let sw = createSwitch("", (element) => {
+    			sw = createSwitch("", (element) => {
         			fx.solo = element.target.checked;
+    			});
+    			fxKnobs.appendChild(sw);
+    			break;
+    		case "channel":
+    			let panvol = new Tone.PanVol({pan: 0, volume: 0, channels: 2});
+    			fxKnobs.appendChild(createFXKnob("pan", {fx: panvol, default: 0, min: -1, max: 1}));
+    			fxKnobs.appendChild(createFXKnob("volume", {fx: panvol, default: 0, min: -40, max: 5}));
+    			chain.push(panvol);
+
+    			let solo = new Tone.Solo();
+    			sw = createSwitch("solo", (element) => {
+        			solo.solo = element.target.checked;
+    			});
+    			fxKnobs.appendChild(sw);
+    			chain.push(solo);
+
+    			fx = new Tone.Gain();
+    			sw = createSwitch("mute", (element) => {
+        			if(element.target.checked){
+						fx.gain.rampTo(0, 0.05);
+        			} else {
+						fx.gain.rampTo(1, 0.05);
+        			}
     			});
     			fxKnobs.appendChild(sw);
     			break;
@@ -498,6 +562,7 @@ function buildDrumControls(){
            });
         }
         sampleRequestControls.appendChild(requestNewBtn);
+        registerControl(() => requestNewBtn.click(), "trigger", "request", ins_name);
 
 		const requestVariationBtn = document.createElement("div");
 		requestVariationBtn.className = "request-drum-samples btn";
@@ -523,6 +588,7 @@ function buildDrumControls(){
            });
         }
         sampleRequestControls.appendChild(requestVariationBtn);
+        registerControl(() => requestVariationBtn.click(), "trigger", "variation", ins_name);
 
         const trigBtn = document.createElement("div");
         trigBtn.className = "btn";
@@ -592,28 +658,28 @@ function buildBassControls(){
 	knob.oninput = function(){
 		bassSynth.envelope.attack = this.value;
 	}
-	registerControl(knob, "bass", "attack");
+	registerControl(knob, "value", "bass", "attack");
 	synthKnobs.appendChild(knobContainer);
 
 	({ knobContainer, knob } = createKnob("decay", {default: 0.2}));
 	knob.oninput = function(){
 		bassSynth.envelope.decay= this.value;
 	}
-	registerControl(knob, "bass", "decay");
+	registerControl(knob, "value", "bass", "decay");
 	synthKnobs.appendChild(knobContainer);
 
 	({ knobContainer, knob } = createKnob("sustain", {default: 0.8}));
 	knob.oninput = function(){
 		bassSynth.envelope.sustain= this.value;
 	}
-	registerControl(knob, "bass", "sustain");
+	registerControl(knob, "value", "bass", "sustain");
 	synthKnobs.appendChild(knobContainer);
 
 	({ knobContainer, knob } = createKnob("release", {default: 1.0}));
 	knob.oninput = function(){
 		bassSynth.envelope.release= this.value;
 	}
-	registerControl(knob, "bass", "release");
+	registerControl(knob, "value", "bass", "release");
 	synthKnobs.appendChild(knobContainer);
 
 	// Portmento
@@ -621,7 +687,7 @@ function buildBassControls(){
 	knob.oninput = function(){
 		bassSynth.portamento= this.value;
 	}
-	registerControl(knob, "bass", "portamento");
+	registerControl(knob, "value", "bass", "portamento");
 	synthKnobs.appendChild(knobContainer);
 
 	// filter
@@ -631,7 +697,7 @@ function buildBassControls(){
     	let val = this.value * (params.max - params.min) + params.min;
     	bassSynth.filterEnvelope.octaves = val;
 	}
-	registerControl(knob, "bass", "octaves");
+	registerControl(knob, "value", "bass", "octaves");
 	synthKnobs.appendChild(knobContainer);
 
 	params = {default: 1.0, min: 0.2, max: 10.0};
@@ -640,14 +706,53 @@ function buildBassControls(){
     	let val = this.value * (params.max - params.min) + params.min;
     	bassSynth.set({filter: {Q: val}});
 	}
-	registerControl(knob, "bass", "q");
+	registerControl(knob, "value", "bass", "q");
 	synthKnobs.appendChild(knobContainer);
 
+}
+
+function buildSamplerControls(){
+    
+	const synthBox = document.createElement("div");
+	const synthName = document.createElement("span");
+	synthName.innerText = "Sampler";
+	synthName.classList.add("fx-name");
+
+	const synthColor = "hsl(" + 0 + ", 50%, 50%)";
+	synthName.style.backgroundColor = synthColor;
+	synthBox.classList.add("fx-box");
+	synthBox.appendChild(synthName);
+
+	let synthKnobs = document.createElement("div");
+	synthKnobs.classList.add("fx-knobs");
+	synthBox.appendChild(synthKnobs);
+	document.getElementById("sound-controls").appendChild(synthBox);
+
+	let { knobContainer, knob } = createKnob("attack", {default: 0.0});
+	knob.oninput = function(){
+        if(sampler){
+            sampler.attack = this.value;
+        }
+        samplerParams.attack = this.value
+	}
+	registerControl(knob, "value", "sampler", "attack");
+	synthKnobs.appendChild(knobContainer);
+
+	({ knobContainer, knob } = createKnob("release", {default: 0.0}));
+	knob.oninput = function(){
+        if(sampler){
+            sampler.release = this.value;
+        }
+        samplerParams.release = this.value
+	}
+	registerControl(knob, "value", "sampler", "release");
+	synthKnobs.appendChild(knobContainer);
 }
 
 function setup(){
     buildDrumControls();
     buildBassControls();
+    buildSamplerControls();
 
     // build SYNTH FXs chain
 	let { chain, container } = buildFXChain(SOUND_FX_CHAIN, 2, false);
@@ -656,9 +761,6 @@ function setup(){
 	soundChannel.appendChild(container);
 	document.getElementById("sound-controls").appendChild(soundChannel);
 	soundChain = chain;
-	//sampler.connect(soundChain[0]);
-	//melodySynth.connect(soundChain[0]);
-	//soundPlayers.connect(soundChain[0]);
 
 	// build BASS FXs chain
 	({ chain, container } = buildFXChain(BASS_FX_CHAIN, 2, false));
@@ -761,7 +863,7 @@ function removeBar(i, arrangement, arrangementView){
 	drawArrangementView(arrangement, arrangementView);
 }
 
-function deleteBar(bar, barPool, arrangement, arrangementView, slot){
+function deleteBar(bar, barPool, arrangement, arrangementView, slot, oscAddr=null){
     // remove from pool
     const idx = barPool.indexOf(bar);
     if(idx > -1){
@@ -792,6 +894,11 @@ function deleteBar(bar, barPool, arrangement, arrangementView, slot){
     setTimeout(() => {
 		bar.element.remove()
     }, 200);
+
+    // send oscMsg if possible
+	if(oscAddr){
+    	sendOSC(oscAddr, barPool.length)
+	}
 }
 
 function drawArrangementView(arrangement, arrangementView){
@@ -824,7 +931,8 @@ function recievedNewBar(
     arrangementView,
     slot,
     barName="bar",
-    hue=0
+    hue=0,
+    oscAddr=null,
 ){
     const notes = data["notes"];
     const z = data["z"];
@@ -844,7 +952,7 @@ function recievedNewBar(
 
     barDelete.onclick = (event) => {
         event.preventDefault();
-        deleteBar(bar, barPool, arrangement, arrangementView, slot);
+        deleteBar(bar, barPool, arrangement, arrangementView, slot, oscMsg);
     }
     barPool.push(bar);
    	barPoolView.appendChild(bar.element);
@@ -853,6 +961,10 @@ function recievedNewBar(
         addBar(arrangement, arrangementView, bar);
    	}
 	bar.renderToCanvas(barCanvas)
+
+	if(oscAddr){
+    	sendOSC(oscAddr, barPool.length)
+	}
 
 	return bar;
 }
@@ -896,11 +1008,15 @@ window.onload = () => {
                 selectedDrumBar,
                 "~",
                 drumLastHue,
+                "/drum/pool",
             )
+
+            //sendOSC("/drum/pool", drumPool.length);
 
             drumLastHue += 55;
         });
     }
+    registerControl(() => document.getElementById("request-new-grid").click(), "trigger", "request", "drums");
 
     document.getElementById("request-variation-grid").onclick = () => {
         if(!selectedDrumBar[0] || !selectedDrumBar[0].z){
@@ -929,9 +1045,11 @@ window.onload = () => {
                 selectedDrumBar,
                 "*",
                 hue,
+                "/drum/pool",
             )
     	})
     }
+    registerControl(() => document.getElementById("request-variation-grid").click(), "trigger", "variation", "drums");
 
     document.getElementById("request-new-bassline").onclick = () => {
         apiCall(id, ROOT_URL, "requestBassline", {})
@@ -951,11 +1069,13 @@ window.onload = () => {
                 selectedBassBar,
                 "~ ",
                 bassLastHue,
+                "/bass/pool",
             );
 
             bassLastHue += 55;
         })
     }
+    registerControl(() => document.getElementById("request-new-bassline").click(), "trigger", "request", "bassline");
 
     document.getElementById("request-variation-bassline").onclick = () => {
         if(!selectedBassBar[0] || !selectedBassBar[0].z){
@@ -983,9 +1103,11 @@ window.onload = () => {
                 selectedBassBar,
                 "*",
                 hue,
+                "/bass/pool",
             );
     	})
     }
+    registerControl(() => document.getElementById("request-variation-bassline").click(), "trigger", "variation", "bassline");
 
     document.getElementById("request-new-melody").onclick = () => {
         apiCall(id, ROOT_URL, "requestMelody", {})
@@ -1005,13 +1127,13 @@ window.onload = () => {
                 selectedSoundBar,
                 "~ ",
                 soundLastHue,
+                "/sampler/pool",
             );
 
-			console.log("requestNewMelody callback");
-			console.log(data.z);
             soundLastHue += 55;
         })
     }
+    registerControl(() => document.getElementById("request-new-melody").click(), "trigger", "request", "melody");
 
     document.getElementById("request-variation-melody").onclick = () => {
         if(!selectedSoundBar[0] || !selectedSoundBar[0].z){
@@ -1038,9 +1160,11 @@ window.onload = () => {
                 selectedSoundBar,
                 "*",
                 hue,
+                "/sampler/pool",
             );
     	})
     }
+    registerControl(() => document.getElementById("request-variation-melody").click(), "trigger", "variation", "melody");
 
     document.getElementById("request-sound-sample").onclick = () => {
         apiPostCall(id, ROOT_URL, "requestSamplerSound", {})
@@ -1050,9 +1174,6 @@ window.onload = () => {
 				return
             }
             const { sample, note, z } = data;
-
-			//console.log("requestSoundSample callback");
-            //console.log(z);
 
 			const fp = getSamplePath(sample);
             const url = fp[1] + "/" + fp[2];
@@ -1064,6 +1185,8 @@ window.onload = () => {
             const tempSampler = new Tone.Sampler({
                 urls: sampleMap,
                 baseUrl: ROOT_URL + "sample/",
+                attack: samplerParams.attack,
+                release: samplerParams.release,
                 onload: () => {
                     console.log('loaded sample');
                     if(sampler){
@@ -1077,13 +1200,13 @@ window.onload = () => {
 
         })
     }
+    registerControl(() => document.getElementById("request-sound-sample").click(), "trigger", "request", "sound_sample");
 
     document.getElementById("request-variation-sound-sample").onclick = () => {
         if(!soundSampleZ){
             console.log("need to request sound")
 			return
         }
-		//console.log(soundSampleZ);
         apiPostCall(id, ROOT_URL, "requestSamplerSound", {variaion: true, z: soundSampleZ})
         .then(data => {
             if(!data || !data["ok"]){
@@ -1112,10 +1235,69 @@ window.onload = () => {
                     soundSampleZ = z;
                 }
             });
-
         })
     }
+    registerControl(() => document.getElementById("request-variation-sound-sample").click(), "trigger", "variation", "sound_sample");
 
+	registerControl((args) => {
+    	if(args[0] >= bassPool.length){
+        	return
+    	}
+    	const e = new MouseEvent('dblclick', {
+        	view: window, 'bubbles': true, 'cancelable': true,
+    	})
+		bassPool[args[0]].element.dispatchEvent(e);
+		bassPool[args[0]].element.click();
+	}, "trigger", "add", "bassline");
+
+	registerControl((args) => {
+    	removeBar(args[0], bassArrangement, document.getElementById("bass-arrangement"));
+	}, "trigger", "remove", "bassline");
+
+	registerControl((args) => {
+		bassPool[args[0]].element.click();
+    	deleteBar(bassPool[args[0]], bassPool, bassArrangement, document.getElementById("bass-arrangement"), selectedBassBar, "/bass/pool");
+	}, "trigger", "delete", "bassline");
+
+	registerControl((args) => {
+    	if(args[0] >= drumPool.length){
+        	return
+    	}
+    	const e = new MouseEvent('dblclick', {
+        	view: window, 'bubbles': true, 'cancelable': true,
+    	})
+		drumPool[args[0]].element.dispatchEvent(e);
+		drumPool[args[0]].element.click();
+	}, "trigger", "add", "drums");
+
+	registerControl((args) => {
+    	removeBar(args[0], drumArrangement, document.getElementById("drum-arrangement"));
+	}, "trigger", "remove", "drums");
+
+	registerControl((args) => {
+		drumPool[args[0]].element.click();
+    	deleteBar(drumPool[args[0]], drumPool, drumArrangement, document.getElementById("drum-arrangement"), selectedDrumBar, "drum/pool");
+	}, "trigger", "delete", "drums");
+
+	registerControl((args) => {
+    	if(args[0] >= soundPool.length){
+        	return
+    	}
+    	const e = new MouseEvent('dblclick', {
+        	view: window, 'bubbles': true, 'cancelable': true,
+    	})
+		soundPool[args[0]].element.dispatchEvent(e);
+		soundPool[args[0]].element.click();
+	}, "trigger", "add", "melody");
+
+	registerControl((args) => {
+    	removeBar(args[0], soundArrangement, document.getElementById("sampler-arrangement"));
+	}, "trigger", "remove", "melody");
+
+	registerControl((args) => {
+		soundPool[args[0]].element.click();
+    	deleteBar(soundPool[args[0]], soundPool, soundArrangement, document.getElementById("sampler-arrangement"), selectedSoundBar, "/sampler/pool");
+	}, "trigger", "delete", "melody");
 
     play_btn.onclick = () => {
         Tone.start();
@@ -1130,6 +1312,7 @@ window.onload = () => {
         	sendOSC("/audio/playing", 1);
         }
     }
+    registerControl(() => play_btn.click, "trigger", "transport", "play");
 
 	const bpmElement = document.getElementById("bpm");
 	const updateBPM = function(d){
@@ -1146,7 +1329,8 @@ window.onload = () => {
     	updateBPM(1);
     };
 
-    document.getElementById("loop-length").oninput = function(){
+	const loopLengthSelection = document.getElementById("loop-length");
+    loopLengthSelection.oninput = function(){
         loopLength = this.value;
         const bars = Math.floor(loopLength);
         const quarters = Math.floor(4*loopLength) % 4;
@@ -1154,7 +1338,9 @@ window.onload = () => {
         Tone.Transport.loopEnd = `${bars}:${quarters}:${sixteenths}`;
 		drawTimeline();
     }
-    document.getElementById("loop-length").value = "4";
+    loopLengthSelection.value = "4";
+	registerControl(loopLengthSelection, "selection", "loopLength");
+
     document.getElementById("download-loop").onclick = () => {
 		recordLoop();
     }
@@ -1173,7 +1359,7 @@ window.onload = () => {
         drumArrangement.updatePart();
         drawArrangementView(drumArrangement, document.getElementById("drum-arrangement"));
     }
-    registerControl(drumThresholdKnob, "drums", "threshold");
+    registerControl(drumThresholdKnob, "value", "drums", "threshold");
 
 	const drumMidiDownload = document.getElementById("drum-midi-download");
 	drumMidiDownload.onclick = function() {
@@ -1205,6 +1391,4 @@ window.onload = () => {
 
 	setup();
 	drawTimeline();
-
-	//console.log(registeredControls);
 }

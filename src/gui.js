@@ -65,7 +65,7 @@ export function createSwitch(name, onchange){
 	switchContainer.appendChild(sw);
 
 	let label = document.createElement("span");
-	label.classList.add("fx-name");
+	label.classList.add("fx-parameter");
 	label.innerText = name;
 	switchContainer.appendChild(label);
 
