@@ -39,7 +39,7 @@ export function apiCall(id, root, m_type, data) {
 		parameters += key + "=" + data[key] + "&";
     }
 
-	return fetch(`${root}api/${m_type}/${id}${parameters}`)
+	return fetch(`${root}api/${m_type}/${id}${parameters}`, {mode: 'cors'})
 	.then(response => {
 		if(!response.ok){
     		throw new Error(`request for ${root}api/${m_type}/${id}${parameters} failed with status ${response.status}`);

@@ -8,9 +8,9 @@ const STARTED = 1;
 const WHITE_KEYS = [0, 2, 4, 5, 7, 9, 11];
 
 const DRUMCOLORS = {
-    "00_KD": "#F44",
-    "01_SD": "#FA4",
-    "02_HH": "#FF8",
+    "00_KD": "#F00",
+    "01_SD": "#F80",
+    "02_HH": "#FF0",
 }
 
 const DRUM_NAMES = {
@@ -182,15 +182,15 @@ export class BassBar extends Bar {
         if(grid){
             for(let i = 0; i < 12; i++){
                 if(WHITE_KEYS.indexOf(i) >= 0){
-                    ctx.fillStyle = "#CCC";
+                    ctx.fillStyle = "#555";
                 } else {
-                    ctx.fillStyle = "#AAA";
+                    ctx.fillStyle = "#333";
                 }
                 ctx.fillRect(0, canvas.height - (i+1)*noteHeight, canvas.width, noteHeight);
             }
         }
 
-        ctx.fillStyle = "#222";
+        ctx.fillStyle = "#999";
         for(const note of this.notes){
             const top = canvas.height - (note[0]+1)*noteHeight;
             const start = gridWidth*note[1];
@@ -212,13 +212,13 @@ export class DrumBar extends Bar {
         const barwidth = canvas.width;
         const barHeight = canvas.height;
 
-        ctx.fillStyle = "#AAA";
+        ctx.fillStyle = "#444";
         ctx.fillRect(0, 0, canvas.width, canvas.height);
 
         if(grid){
             for(let j = 0; j <= 16; j++){
                 if(j%8 == 0){
-                    ctx.fillStyle = "#AAA";
+                    ctx.fillStyle = "#333";
                     ctx.fillRect(j*barwidth/16, 0, barwidth/4, barHeight);
                 }
                 ctx.strokeStyle = "#666";

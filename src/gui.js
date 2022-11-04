@@ -20,7 +20,7 @@ export function createKnob(name, params={}){
 	knob.setAttribute("min", "0"); //getDefault(params, "min", 0.0));
 	knob.setAttribute("max", "1"); //getDefault(params, "max", 1.0));
 	knob.setAttribute("step","0.01"); // getDefault(params, "step", 0.01));
-	knob.setAttribute("data-src", "src/knob.png");
+	knob.setAttribute("data-src", "src/knob_digital.png");
 	knob.setAttribute("data-sprites", "127");
 	if(params["default"] != null){
 		let _min = getDefault(params, "min", 0.0);
@@ -55,13 +55,17 @@ export function createFXKnob(name, params={}, register={}){
 	return knobContainer;;
 }
 
-export function createSwitch(name, onchange){
+export function createSwitch(name, onchange, image=null){
 	let switchContainer = document.createElement("div");
 	switchContainer.classList.add("fx-knob");
 
 	let sw = document.createElement("input");
 	sw.setAttribute("type", "checkbox");
 	sw.className = "input-switch";
+	if(image){
+    	sw.setAttribute("data-src", image);
+	}
+
 	switchContainer.appendChild(sw);
 
 	let label = document.createElement("span");
@@ -127,7 +131,7 @@ export function createBarElement(name="bar", hue=0){
 	const barName = document.createElement("span");
 	barName.classList.add("bar-title");
 	barName.innerText = name;
-	barName.style.backgroundColor = "hsl(" + hue + ", 50%, 50%)";
+	barName.style.backgroundColor = "hsl(" + hue + ", 100%, 50%)";
 	barElement.appendChild(barName);
 
 	const barCanvas = document.createElement("canvas");

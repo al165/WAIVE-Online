@@ -1,7 +1,9 @@
 import * as Tone from 'tone';
 import './style.css';
 import './input-knobs.js';
-import './knob.png';
+import './knob_digital.png';
+import './switch_mute.png';
+import './switch_solo.png';
 import './slider.png';
 const OSC = require('osc-js');
 
@@ -13,8 +15,8 @@ import { createKnob, createFXKnob, createSelection, createSwitch, Meter, createB
 import { download, getSamplePath, apiCall, apiPostCall, cleanName, makeSoundRange } from './utils.js';
 import { BypassableFX, DrumBar, SoundBar, BassBar, DrumArrangement, NoteArrangement } from './waive_components.js';
 
-//const ROOT_URL = window.location.pathname;
-const ROOT_URL = "https://www.arranlyon.com/waive";
+const ROOT_URL = window.location.pathname;
+//const ROOT_URL = "https://www.arranlyon.com/waive";
 
 Tone.Transport.bpm.value = 110;
 Tone.Transport.loop = true;
@@ -98,33 +100,7 @@ let selectedSoundBar = [];
 let soundLastHue = 0;
 let soundSampleZ;
 
-// Temporary!
-let melodySynth = new Tone.MonoSynth({
-	"portamento": 0.2,
-	"oscillator":{
-    	"type": "sawtooth",
-	},
-	"envelope":{
-    	"attack": 0.01,
-    	"decay": 0.2,
-    	"sustain": 0.5,
-    	"release": 1.0,
-	},
-	"filterEnvelope":{
-    	"attack": 0.01,
-    	"decay": 0.2,
-    	"sustain": 0.2,
-    	"release": 1.0,
-    	"octaves": 1.0,
-	},
-	"filter":{
-    	"type": "lowpass",
-    	"Q": 1.0,
-	}
-});
-
 let sampler;
-
 let samplerParams = {
     attack: 0.0,
     release: 0.0,
@@ -140,9 +116,9 @@ soundArrangement.synthCallback = (frequency, length, time) => {
 }
 
 const DRUMCOLORS = {
-	"00_KD": "#F44",
-	"01_SD": "#FA4",
-	"02_HH": "#FF8",
+	"00_KD": "#F00",
+	"01_SD": "#F80",
+	"02_HH": "#FF0",
 }
 
 const DRUM_NAMES = {
@@ -341,7 +317,7 @@ function buildFXChain(fxList, channels=2, bypass=false){
     	const fxName = document.createElement("span");
     	fxName.innerText = fxType;
     	fxName.classList.add("fx-name");
-    	const fxColor = "hsl(" + (64 * i/fxList.length + 30) + ", 50%, 50%)";
+    	const fxColor = "hsl(" + (64 * i/fxList.length + 30) + ", 100%, 50%)";
     	fxName.style.backgroundColor = fxColor;
     	fxBox.classList.add("fx-box");
     	fxBox.appendChild(fxName);
@@ -425,7 +401,7 @@ function buildFXChain(fxList, channels=2, bypass=false){
     			let solo = new Tone.Solo();
     			sw = createSwitch("solo", (element) => {
         			solo.solo = element.target.checked;
-    			});
+    			}, "src/switch_solo.png");
     			fxKnobs.appendChild(sw);
     			chain.push(solo);
 
@@ -436,7 +412,7 @@ function buildFXChain(fxList, channels=2, bypass=false){
         			} else {
 						fx.gain.rampTo(1, 0.05);
         			}
-    			});
+    			}, "src/switch_mute.png");
     			fxKnobs.appendChild(sw);
     			break;
     		case "meter":
@@ -1347,7 +1323,7 @@ window.onload = () => {
     }
 
     let drumThresholdKnob = document.getElementById("drum-threshold");
-	drumThresholdKnob.setAttribute("data-src", "src/knob.png");
+	drumThresholdKnob.setAttribute("data-src", "src/knob_digital.png");
 	drumThresholdKnob.setAttribute("data-diameter", "50");
 	drumThresholdKnob.setAttribute("min", "0");
 	drumThresholdKnob.setAttribute("max", "0.5");

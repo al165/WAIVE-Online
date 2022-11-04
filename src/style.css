@@ -1,6 +1,7 @@
 html,
 body {
 	font-family: arial;
+	background-color: #222;
 }
 
 #content {
@@ -15,15 +16,15 @@ h1 {
 #waive {
     position: relative;
     left: 50%;
-    transform: translateX(-50%) scale(0.85);
+    transform: translateX(-50%) scale(0.9);
 	width: fit-content;
 	display: grid;
 	grid-template-columns: auto auto;
 	justify-content: flex-start;
-	background-color: #CCC;
-	border: solid 1px black;
-	filter: drop-shadow(5px 5px 16px gray);
-	border-radius: 16px;
+	background-color: #444;
+	border: solid 1px #AAA;
+	filter: drop-shadow(5px 5px 16px #777);
+	border-radius: 5px;
 	padding: 10px;
 }
 
@@ -32,7 +33,7 @@ h1 {
 	padding-left: 2em;
 	width: 100%;
 	text-align: center;
-	background-color: darkgray;
+	/*background-color: darkgray; */
 	user-select: none;
 }
 
@@ -43,7 +44,7 @@ p {
 
 .play-area {
     position: relative;
-    border: 1px #AAA solid;
+    border: 1px #555 solid;
     width: 800px;
 }
 
@@ -165,8 +166,8 @@ p {
     display: flex;
     flex-direction: row;
     border-radius: 4px;
-    background-color: #AAA;
-    box-shadow: inset 1px 0px 10px #777;
+    background-color: #555;
+    box-shadow: inset 1px 0px 10px #999;
 }
 
 .bar {
@@ -255,7 +256,7 @@ p {
 	display: flex;
 	flex-direction: row;
 	justify-content: flex-start;
-	background-color: #999;
+	background-color: #444;
 	border: solid 1px black;
 }
 
@@ -280,13 +281,14 @@ p {
 }
 
 .btn {
-	background-color: #AAA;
+	background-color: #666;
 	border: solid 1px #333;
 	margin: 10px 10px;
 	padding: 10px;
 	width: fit-content;
 	cursor: pointer;
 	user-select: none;
+	color: white;
 }
 
 .btn:hover {
@@ -317,7 +319,7 @@ p {
 }
 
 .fx-box {
-	border: solid 1px #333;
+	border: solid 1px #AAA;
 	padding: 2px;
 	display: flex;
 	flex-direction: column;
@@ -342,6 +344,7 @@ p {
 	display: flex;
 	flex-direction: row;
 	align-items: center;
+	color: white;
 }
 
 .fx-knob {
@@ -393,8 +396,8 @@ select {
 }
 
 .ins-channel {
-	border: solid 1px black;
-	background-color: #999;
+	border: solid 1px white;
+	background-color: #444;
 	display: flex;
 	align-items: center;
 	padding: 5px 20px;
@@ -411,3 +414,22 @@ select {
 	height: 300px;
 }
 
+#drum-header {
+    background-color: #F00;
+    color: black;
+}
+
+#bass-header {
+    background-color: #F80;
+    color: black;
+}
+
+#sampler-header {
+    background-color: #FF0;
+    color: black;
+}
+
+#master-header {
+    background-color: #0F0;
+    color: black;
+}
