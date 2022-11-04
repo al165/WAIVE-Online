@@ -1,6 +1,7 @@
 import os
 import sys
 from flask import Flask, render_template, request, send_from_directory
+from flask_cors import CORS
 
 sys.path.extend(["../../REALTIME/", "../../COMMON_UTILS/"])
 from waive_server import WaiveServer
@@ -14,6 +15,8 @@ app = Flask(
     template_folder="dist",
     static_url_path="",
 )
+CORS(app, resources={r"/*": {"origins": "*"}})
+app.config['CORS_HEADERS'] = 'Content-Type'
 
 ws = WaiveServer()
 ws.drum_generator_params["root"] = "../"
