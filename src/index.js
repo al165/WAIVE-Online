@@ -15,8 +15,8 @@ import { createKnob, createFXKnob, createSelection, createSwitch, Meter, createB
 import { download, getSamplePath, apiCall, apiPostCall, cleanName, makeSoundRange } from './utils.js';
 import { BypassableFX, DrumBar, SoundBar, BassBar, DrumArrangement, NoteArrangement } from './waive_components.js';
 
-const ROOT_URL = window.location.pathname;
-//const ROOT_URL = "https://www.arranlyon.com/waive";
+//const ROOT_URL = window.location.pathname;
+const ROOT_URL = "https://www.arranlyon.com/waive/";
 
 Tone.Transport.bpm.value = 110;
 Tone.Transport.loop = true;
