@@ -15,12 +15,8 @@ app = Flask(
     template_folder="dist",
     static_url_path="",
 )
-<<<<<<< HEAD
 CORS(app, resources={r"/*": {"origins": "*"}})
 app.config['CORS_HEADERS'] = 'Content-Type'
-=======
-CORS(app)
->>>>>>> 0e3aa279b30dc512e6c45eed7aad09e1f5b15b76
 
 ws = WaiveServer()
 ws.drum_generator_params["root"] = "../"
