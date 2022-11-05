@@ -534,7 +534,7 @@ function buildDrumControls(){
                 }
                 const ds = data["drum_samples"];
                 drumSampleZs[ins_name] = data["z"];
-                drumSampleToLoad[ins_name] = [ds]; //drumSampleToLoad[ins_name].concat(ds);
+                drumSampleToLoad[ins_name] = [ds];
                 updateDrumSamples();
            });
         }
@@ -577,18 +577,18 @@ function buildDrumControls(){
         }
         sampleRequestControls.appendChild(trigBtn);
 
-        const downloadBtn = document.createElement("div");
-        downloadBtn.className = "btn";
-        downloadBtn.innerText = "⤓";
-        downloadBtn.onclick = () => {
-            if(drumSampleURL[ins_name]){
-				const url = drumSampleURL[ins_name].url;
-				const fp = drumSampleURL[ins_name].fp;
+        //const downloadBtn = document.createElement("div");
+        //downloadBtn.className = "btn";
+        //downloadBtn.innerText = "⤓";
+        //downloadBtn.onclick = () => {
+        //    if(drumSampleURL[ins_name]){
+		//		const url = drumSampleURL[ins_name].url;
+		//		const fp = drumSampleURL[ins_name].fp;
 
-				download(url, fp);
-            }
-        }
-        sampleRequestControls.appendChild(downloadBtn);
+		//		download(url, fp);
+        //    }
+        //}
+        //sampleRequestControls.appendChild(downloadBtn);
 
         const sampleName = document.createElement("span");
         sampleName.classList.add("drum-sample-name");
@@ -611,6 +611,33 @@ function buildDrumControls(){
 
 		drumChain[ins_name] = chain;
     }
+}
+
+function loadNewSamplerSample(data){
+    const { sample, note, z } = data;
+
+	const fp = getSamplePath(sample);
+    const url = fp[1] + "/" + fp[2];
+
+    const note_val = parseInt(60+note);
+    let sampleMap = {};
+    sampleMap[note_val] = url;
+
+    const tempSampler = new Tone.Sampler({
+        urls: sampleMap,
+        baseUrl: ROOT_URL + "sample/",
+        onload: () => {
+            console.log('loaded sample');
+            if(sampler){
+                sampler.dispose();
+            }
+            sampler = tempSampler;
+            sampler.connect(soundChain[0]);
+            soundSampleZ = z;
+			const label = `${cleanName(fp[2])}`;
+            document.getElementById("sampler-sample-name").innerText = label;
+        }
+    });
 }
 
 
@@ -689,7 +716,72 @@ function buildBassControls(){
 }
 
 function buildSamplerControls(){
-    
+    const channel = document.getElementById("sound-controls");
+
+	const sampleRequestControls = document.createElement("div");
+	sampleRequestControls.classList.add("sample-request-controls");
+
+	const requestNewBtn = document.createElement("div");
+	requestNewBtn.className = "request-drum-samples btn";
+	requestNewBtn.innerText = "new";
+    requestNewBtn.onclick = () => {
+        apiPostCall(id, ROOT_URL, "requestSamplerSound", {})
+        .then(data => {
+            if(!data || !data["ok"]){
+				console.log("no sampler data");
+				//requestNewBtn.click();
+				return
+            }
+
+            loadNewSamplerSample(data);
+        })
+    }
+    registerControl(() => requestNewBtn.click(), "trigger", "request", "sound_sample");
+    sampleRequestControls.appendChild(requestNewBtn);
+
+	const requestVarBtn = document.createElement("div");
+	requestVarBtn.className = "request-drum-samples btn";
+	requestVarBtn.innerText = "var";
+    requestVarBtn.onclick = () => {
+        if(!soundSampleZ){
+            console.log("need to request sound")
+			return
+        }
+        apiPostCall(id, ROOT_URL, "requestSamplerSound", {variaion: true, z: soundSampleZ})
+        .then(data => {
+            if(!data || !data["ok"]){
+				console.log("no sampler data");
+				//requestNewBtn.click();
+				return
+            }
+
+            loadNewSamplerSample(data);
+        })
+    }
+    registerControl(() => requestNewBtn.click(), "trigger", "variation", "sound_sample");
+    sampleRequestControls.appendChild(requestVarBtn);
+
+    const trigBtn = document.createElement("div");
+    trigBtn.className = "btn";
+    trigBtn.innerText = "▶";
+    trigBtn.onclick = () => {
+		//drumPlayers[ins_name].start(0, 0);
+        if(sampler){
+            sampler.triggerAttackRelease(60);
+        }
+    }
+    sampleRequestControls.appendChild(trigBtn);
+
+    channel.appendChild(sampleRequestControls);
+
+
+    const sampleName = document.createElement("span");
+    sampleName.classList.add("drum-sample-name");
+    sampleName.id = "sampler-sample-name";
+    sampleName.innerText = "---";
+    sampleName.setAttribute("target", "_blank");
+    //drumSampleLabels[ins_name] = sampleName;
+    sampleRequestControls.append(sampleName);
 	const synthBox = document.createElement("div");
 	const synthName = document.createElement("span");
 	synthName.innerText = "Sampler";
@@ -703,7 +795,7 @@ function buildSamplerControls(){
 	let synthKnobs = document.createElement("div");
 	synthKnobs.classList.add("fx-knobs");
 	synthBox.appendChild(synthKnobs);
-	document.getElementById("sound-controls").appendChild(synthBox);
+	channel.appendChild(synthBox);
 
 	let { knobContainer, knob } = createKnob("attack", {default: 0.0});
 	knob.oninput = function(){
@@ -1143,79 +1235,6 @@ window.onload = () => {
     }
     registerControl(() => document.getElementById("request-variation-melody").click(), "trigger", "variation", "melody");
 
-    document.getElementById("request-sound-sample").onclick = () => {
-        apiPostCall(id, ROOT_URL, "requestSamplerSound", {})
-        .then(data => {
-            if(!data || !data["ok"]){
-				console.log("no sampler data");
-				return
-            }
-            const { sample, note, z } = data;
-
-			const fp = getSamplePath(sample);
-            const url = fp[1] + "/" + fp[2];
-
-            const note_val = parseInt(60+note);
-            let sampleMap = {};
-            sampleMap[note_val] = url;
-
-            const tempSampler = new Tone.Sampler({
-                urls: sampleMap,
-                baseUrl: ROOT_URL + "sample/",
-                attack: samplerParams.attack,
-                release: samplerParams.release,
-                onload: () => {
-                    console.log('loaded sample');
-                    if(sampler){
-                        sampler.dispose();
-                    }
-                    sampler = tempSampler;
-                    sampler.connect(soundChain[0]);
-                    soundSampleZ = z;
-                }
-            });
-
-        })
-    }
-    registerControl(() => document.getElementById("request-sound-sample").click(), "trigger", "request", "sound_sample");
-
-    document.getElementById("request-variation-sound-sample").onclick = () => {
-        if(!soundSampleZ){
-            console.log("need to request sound")
-			return
-        }
-        apiPostCall(id, ROOT_URL, "requestSamplerSound", {variaion: true, z: soundSampleZ})
-        .then(data => {
-            if(!data || !data["ok"]){
-				console.log("no sampler data");
-				return
-            }
-            const { sample, note, z } = data;
-
-			const fp = getSamplePath(sample);
-            const url = fp[1] + "/" + fp[2];
-
-            const note_val = parseInt(60+note);
-            let sampleMap = {};
-            sampleMap[note_val] = url;
-
-            const tempSampler = new Tone.Sampler({
-                urls: sampleMap,
-                baseUrl: ROOT_URL + "sample/",
-                onload: () => {
-                    console.log('loaded sample');
-                    if(sampler){
-                        sampler.dispose();
-                    }
-                    sampler = tempSampler;
-                    sampler.connect(soundChain[0]);
-                    soundSampleZ = z;
-                }
-            });
-        })
-    }
-    registerControl(() => document.getElementById("request-variation-sound-sample").click(), "trigger", "variation", "sound_sample");
-
 	registerControl((args) => {
     	if(args[0] >= bassPool.length){
         	return
@@ -1318,9 +1337,9 @@ window.onload = () => {
     loopLengthSelection.value = "4";
 	registerControl(loopLengthSelection, "selection", "loopLength");
 
-    document.getElementById("download-loop").onclick = () => {
-		recordLoop();
-    }
+    //document.getElementById("download-loop").onclick = () => {
+	//	recordLoop();
+    //}
 
     let drumThresholdKnob = document.getElementById("drum-threshold");
 	drumThresholdKnob.setAttribute("data-src", "src/knob_digital.png");
@@ -1338,17 +1357,17 @@ window.onload = () => {
     }
     registerControl(drumThresholdKnob, "value", "drums", "threshold");
 
-	const drumMidiDownload = document.getElementById("drum-midi-download");
-	drumMidiDownload.onclick = function() {
-    	const midi = drumArrangement.toMidi();
-		download(midi, "drum_pattern.mid");
-	}
+	//const drumMidiDownload = document.getElementById("drum-midi-download");
+	//drumMidiDownload.onclick = function() {
+    //	const midi = drumArrangement.toMidi();
+	//	download(midi, "drum_pattern.mid");
+	//}
 
-	const bassMidiDownload = document.getElementById("bassline-midi-download");
-	bassMidiDownload.onclick = function() {
-    	const midi = bassArrangement.toMidi();
-		download(midi, "bassline.mid");
-	}
+	//const bassMidiDownload = document.getElementById("bassline-midi-download");
+	//bassMidiDownload.onclick = function() {
+    //	const midi = bassArrangement.toMidi();
+	//	download(midi, "bassline.mid");
+	//}
 
 	const OSCloop = new Tone.Loop((time) => {
     	const now = Tone.Transport.position.split(":");
