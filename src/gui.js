@@ -125,13 +125,19 @@ export class Meter{
 }
 
 
-export function createBarElement(name="bar", hue=0){
+export function createBarElement(name="bar", hue=null){
 	const barElement = document.createElement("div");
 	barElement.classList.add("bar");
 	const barName = document.createElement("span");
 	barName.classList.add("bar-title");
 	barName.innerText = name;
-	barName.style.backgroundColor = "hsl(" + hue + ", 100%, 50%)";
+	if(hue){
+    	barName.style.backgroundColor = "hsl(" + hue + ", 100%, 50%)";
+    	barName.style.color = "black";
+	} else {
+    	barName.style.backgroundColor = "black";
+    	barName.style.color = "white";
+	}
 	barElement.appendChild(barName);
 
 	const barCanvas = document.createElement("canvas");

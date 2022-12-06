@@ -1,6 +1,18 @@
+@font-face {
+    font-family: 'VG5000';
+    src:    url('VG5000-Regular_web.eot');
+    src:    url('VG5000-Regular_web.eot?#iefix') format('embedded-opentype'),
+            url('VG5000-Regular_web.woff') format('woff'),
+            url('VG5000-Regular_web.woff2') format('woff2'),
+            url('VG5000-Regular_web.ttf') format('truetype');
+    font-weight: normal;
+    font-style: normal;
+}
+
+
 html,
 body {
-	font-family: arial;
+	font-family: 'VG5000', monospace;
 	background-color: #222;
 }
 
@@ -14,31 +26,29 @@ h1 {
 }
 
 #waive {
-    position: relative;
-    left: 50%;
-    transform: translateX(-50%) scale(0.9);
-	width: fit-content;
+    /*position: relative;*/
+    width: fit-content;
+    transform: scale(1);
+    transform-origin: top left;
 	display: grid;
-	grid-template-columns: auto auto;
-	justify-content: flex-start;
-	background-color: #444;
-	border: solid 1px #AAA;
-	filter: drop-shadow(5px 5px 16px #777);
-	border-radius: 5px;
-	padding: 10px;
+	grid-template-columns: 800px auto;
 }
 
 #waive h2 {
-	font-family: monospace;
-	padding-left: 2em;
-	width: 100%;
-	text-align: center;
-	/*background-color: darkgray; */
+    color: #C4C4C4;
+    font-size: 32pt;
+	padding-right: 2em;
 	user-select: none;
+	font-weight: bold;
+	width: 5em;
 }
 
 p {
     font-size: 12pt;
+}
+
+.center {
+    justify-content: center;
 }
 
 
@@ -58,7 +68,7 @@ p {
 	background-color: #F80;
 }
 
-#timeline {
+.timeline {
 	position: absolute;
 	top: -12px;
 	height: 12px;
@@ -68,27 +78,26 @@ p {
 }
 
 #transport-controls {
-    box-shadow: inset 2px 2px 12px #222;
     position: relative;
-    background-color: #444;
+    background-color: none;
     padding: 10px;
     display: flex;
     flex-direction: row;
     align-items: center;
-    border-radius: 5px;
+    border: 2px solid #9C9C9C;
 }
 
 #transport-time {
-    color: #F80;
+    color: #9C9C9C;
     font-size: 38pt;
-    font-family: monospace;
     margin-right: 10px;
     user-select: none;
+    letter-spacing: 10px;
 }
 
 .transport-btn {
     border: none;
-    color: #F80;
+    color: #FEFEFE;
     background-color: inherit;
     font-size: 26pt;
     margin: 0 10px;
@@ -96,24 +105,25 @@ p {
 }
 
 .transport-btn:hover {
-    color: #FF0;
+    color: #F80;
     background-color: inherit;
 }
 
 .transport-input {
     background-color: inherit;
-    color: #F80;
+    color: #FEFEFE;
     margin: 2px;
-	border: 1px solid #F80;
+	border: 1px solid #9C9C9C;
 	width: 60px;
 	height: 20px;
-	font-family: monospace;
     cursor: pointer;
     user-select: none;
 }
 
 #play {
-    width: 26pt;
+    font-family: monospace;
+    font-size: 32pt;
+    width: 1em;
 }
 
 #bpm {
@@ -133,7 +143,7 @@ p {
 }
 
 #loop-length {
-    width: 68px;
+    padding: 0px 5px;
 }
 
 #osc-status {
@@ -145,7 +155,7 @@ p {
    	display: none;
 }
 
-.verticle {
+.vertical {
     display: flex;
     flex-direction: column;
     align-items: center;
@@ -157,17 +167,21 @@ p {
 	display: flex;
 	flex-direction: row;
 	align-items: center;
-	justify-content: center;
+	min-height: 60px;
+	margin: 30px 3px 15px 3px;
 }
 
 .bar-pool {
     overflow: scroll;
     width: 100%;
+    height: 80px;
     display: flex;
     flex-direction: row;
     border-radius: 4px;
-    background-color: #555;
-    box-shadow: inset 1px 0px 10px #999;
+    background-color: #282828;
+    box-shadow: inset 1px 0px 10px #555;
+    grid-column-start: 1;
+    grid-column-end: 3;
 }
 
 .bar {
@@ -252,43 +266,55 @@ p {
     flex-grow: 2;
 }
 
+.ins-label {
+    font-size: 16pt;
+    color: #C4C4C4;
+}
+
 .controls {
 	display: flex;
 	flex-direction: row;
 	justify-content: flex-start;
-	background-color: #444;
-	border: solid 1px black;
+	/*background-color: #444;
+	border: solid 1px black;*/
 }
 
 .sample-request-controls {
 	display: grid;
-	grid-template-columns: auto auto auto auto;
-	margin-right: 20px;
-	width: 240px;
+	grid-template-columns: 5em auto;
+	margin-right: 10px;
+	align-items: center;
+}
+
+.controls-container {
+    display: flex;
+    flex-direction: row;
 }
 
 .drum-sample-name {
+    font-size: 12pt;
 	grid-column-start: 1;
-	grid-column-end: 5;
+	grid-column-end: 6;
 	background-color: darkgray;
-	font-size: 11px;
 	overflow: hidden;
 	width: 100%;
-	height: 13pt;
 	line-break: anywhere;
-	font-family: monospace;
 	color: black;
+	padding: 6px;
+	height: calc(12px + 12pt);
+
 }
 
 .btn {
-	background-color: #666;
-	border: solid 1px #333;
+	background-color: #434343;
+	border: none;
 	margin: 10px 10px;
 	padding: 10px;
-	width: fit-content;
+	width: max-content;
 	cursor: pointer;
 	user-select: none;
 	color: white;
+	font-size: 12pt;
 }
 
 .btn:hover {
@@ -299,6 +325,11 @@ p {
 
 .input-knob {
 	cursor: pointer;
+}
+
+.knob-label {
+    font-size: 12pt;
+    color: #C4C4C4;
 }
 
 .meter-bg {
@@ -319,7 +350,7 @@ p {
 }
 
 .fx-box {
-	border: solid 1px #AAA;
+	border: solid 2px #414141;
 	padding: 2px;
 	display: flex;
 	flex-direction: column;
@@ -328,8 +359,7 @@ p {
 }
 
 .fx-name, .fx-parameter, .bar-title {
-	font-family: monospace;
-	font-size: 10px;
+	font-size: 12pt;
 	width: 100%;
 	text-align: center;
 	user-select: none;
@@ -338,6 +368,7 @@ p {
 .fx-name {
 	background-color: darkkhaki;
 	cursor: pointer;
+	font-size: 12pt;
 }
 
 .fx-knobs {
@@ -354,7 +385,7 @@ p {
 }
 
 .fx-knob span {
-	margin-top: -5px;
+	margin: -5px 3px;
 }
 
 .meter {
@@ -371,13 +402,13 @@ p {
 
 select {
 	height: fit-content;
+	width: min-content;
 }
 
 
 #request-result {
     padding: 5px;
 	background-color: #FFA;
-	font-family: monospace;
 	color: #444;
 	font-size: 8pt;
 }
@@ -396,11 +427,10 @@ select {
 }
 
 .ins-channel {
-	border: solid 1px white;
-	background-color: #444;
+	border: solid 2px #414141;
 	display: flex;
 	align-items: center;
-	padding: 5px 20px;
+	padding: 5px;
 }
 
 .fx-chain-container {
@@ -414,6 +444,7 @@ select {
 	height: 300px;
 }
 
+/*
 #drum-header {
     background-color: #F00;
     color: black;
@@ -433,3 +464,4 @@ select {
     background-color: #0F0;
     color: black;
 }
+*/

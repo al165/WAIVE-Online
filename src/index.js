@@ -15,8 +15,8 @@ import { createKnob, createFXKnob, createSelection, createSwitch, Meter, createB
 import { download, getSamplePath, apiCall, apiPostCall, cleanName, makeSoundRange } from './utils.js';
 import { BypassableFX, DrumBar, SoundBar, BassBar, DrumArrangement, NoteArrangement } from './waive_components.js';
 
-//const ROOT_URL = window.location.pathname;
-const ROOT_URL = "https://www.arranlyon.com/waive/";
+const ROOT_URL = window.location.pathname;
+//const ROOT_URL = "https://www.arranlyon.com/waive/";
 
 Tone.Transport.bpm.value = 110;
 Tone.Transport.loop = true;
@@ -60,7 +60,6 @@ let drumLastHue = 0;
 let bassArrangement = new NoteArrangement(4, 24, "bassline");
 let bassPool = [];
 let selectedBassBar = [];
-let bassLastHue = 0;
 
 let bassSynth = new Tone.MonoSynth({
 	"portamento": 0.2,
@@ -94,13 +93,12 @@ bassArrangement.synthCallback = (frequency, length, time) => {
 };
 
 let soundArrangement = new NoteArrangement(4, 60, "melody");
-let soundSamples = [];
 let soundPool = [];
 let selectedSoundBar = [];
-let soundLastHue = 0;
 let soundSampleZ;
 
 let sampler;
+let sample_url;
 let samplerParams = {
     attack: 0.0,
     release: 0.0,
@@ -115,16 +113,22 @@ soundArrangement.synthCallback = (frequency, length, time) => {
     }, time);
 }
 
-const DRUMCOLORS = {
-	"00_KD": "#F00",
-	"01_SD": "#F80",
-	"02_HH": "#FF0",
+const DRUM_HUES = {
+	"00_KD": 60,
+	"01_SD": 288,
+	"02_HH": 120,
 }
 
 const DRUM_NAMES = {
 	"00_KD": "kd",
 	"01_SD": "sd",
 	"02_HH": "hh",
+}
+
+const DRUM_LABELS = {
+	"00_KD": "kick",
+	"01_SD": "snare",
+	"02_HH": "hihat",
 }
 
 const DRUM_KEYS = {
@@ -160,9 +164,15 @@ const SOUND_FX_CHAIN = [
 	'delay', 'reverb', 'filter', 'channel', 'meter',
 ]
 
+const SOUND_HUE = 180;
+let soundLastHue = SOUND_HUE;
+
 const BASS_FX_CHAIN = [
 	'delay', 'eq3', 'channel', 'meter',
 ]
+
+const BASS_HUE = 339;
+let bassLastHue = BASS_HUE;
 
 const MASTER_FX_CHAIN = [
 	'meter', 'delay', 'reverb', 'filter', 'eq3', 'compressor', 'limiter', 'gain', 'meter'
@@ -218,7 +228,7 @@ function registerFXChain(container, name="FX"){
     }
 }
 
-const timelineCanvas = document.getElementById("timeline");
+const timelineCanvases = document.getElementsByClassName("timeline");
 
 const oscStatus = document.getElementById("osc-status");
 let enableOSC = false;
@@ -278,34 +288,42 @@ function sendOSC(address, ...data){
 }
 
 function drawTimeline(){
-    const width = timelineCanvas.width;
-    const height = timelineCanvas.height;
-    const ctx = timelineCanvas.getContext("2d");
-    const barWidth = width/4;
+    for(const timelineCanvas of timelineCanvases){
+        const width = timelineCanvas.width;
+        const height = timelineCanvas.height;
+        const ctx = timelineCanvas.getContext("2d");
+        const barWidth = width/4;
 
-    ctx.fillStyle = "#AAA";
-    ctx.fillRect(0, 0, width, height);
+        // background
+        ctx.fillStyle = "#434343";
+        ctx.fillRect(0, 0, width, height);
 
-    ctx.fillStyle = "#F80";
-    //ctx.lineWidth = 3;
-    ctx.fillRect(0, 0, width * loopLength / 4, height);
+        // loop length
+        ctx.fillStyle = "black";
+        ctx.fillRect(0, 0, width * loopLength / 4, height);
 
-    ctx.lineWidth = 1;
-	ctx.strokeStyle = "black";
-    for(let i = 0; i < 4; i++){
-		ctx.moveTo(i*barWidth, 0);
-		ctx.lineTo(i*barWidth, height);
-		ctx.stroke();
-    }
+        // lines
+        ctx.lineWidth = 1;
+        for(let i = 0; i < 4; i++){
+            if(i < loopLength){
+            	ctx.strokeStyle = "white";
+            	ctx.fillStyle = "white";
+            } else {
+            	ctx.strokeStyle = "black";
+            	ctx.fillStyle = "black";
+            }
+    		ctx.moveTo(i*barWidth, 0);
+    		ctx.lineTo(i*barWidth, height);
+    		ctx.stroke();
+    		ctx.fillText(i, barWidth * i + 5, 10);
+        }
 
-
-	ctx.fillStyle = "black";
-    for(let i = 0; i < 4; i++){
-		ctx.fillText(i, barWidth * i + 3, 10);
+        ctx.strokeStyle = "white";
+        ctx.strokeRect(0, 0, width * loopLength / 4, height);
     }
 }
 
-function buildFXChain(fxList, channels=2, bypass=false){
+function buildFXChain(fxList, channels=2, bypass=false, baseColor=null){
 	let chain = [];
 	let container = document.createElement("div");
 	container.classList.add("fx-chain-container");
@@ -317,7 +335,19 @@ function buildFXChain(fxList, channels=2, bypass=false){
     	const fxName = document.createElement("span");
     	fxName.innerText = fxType;
     	fxName.classList.add("fx-name");
-    	const fxColor = "hsl(" + (64 * i/fxList.length + 30) + ", 100%, 50%)";
+    	let fxColor;
+        if(baseColor){
+        	if(fxType == "meter"){
+                fxColor = "#FB9A04";
+        	} else {
+            	const p = 1 - i / (fxList.length - 2);
+                const s = 50 + p*25;
+                fxColor = "hsl(" + baseColor + ", " + "100" + "%, " + s + "%)";
+        	}
+    	} else {
+            //fxColor = "hsl(" + (64 * i/fxList.length + 30) + ", 100%, 50%)";
+            fxColor = "#8D8D8D";
+    	}
     	fxName.style.backgroundColor = fxColor;
     	fxBox.classList.add("fx-box");
     	fxBox.appendChild(fxName);
@@ -504,7 +534,7 @@ async function stopRecording(){
 }
 
 function buildDrumControls(){
-    for(let ins_name in DRUMCOLORS){
+    for(let ins_name in DRUM_HUES){
 		drumPlayers[ins_name] = new Tone.Player();
 		drumPlayersVelocity[ins_name] = new Tone.Gain();
 		drumBuffers[ins_name] = new Tone.ToneAudioBuffer();
@@ -513,18 +543,26 @@ function buildDrumControls(){
 		const channel = document.createElement("div");
 		channel.classList.add("ins-channel");
 		channel.setAttribute("ins", ins_name);
-		const colourStrip = document.createElement("div");
-		colourStrip.classList.add("stripe");
-		colourStrip.style.backgroundColor = DRUMCOLORS[ins_name];
-		channel.appendChild(colourStrip);
+		//const colourStrip = document.createElement("div");
+		//colourStrip.classList.add("stripe");
+		//colourStrip.style.backgroundColor = "hsv(" + DRUM_HUES[ins_name] + ", 100%, 100%)";
+		//channel.appendChild(colourStrip);
 
 		// Sample controls
 		const sampleRequestControls = document.createElement("div");
 		sampleRequestControls.classList.add("sample-request-controls");
 
+		const controlsContainer = document.createElement("div");
+		controlsContainer.classList.add("controls-container");
+
+		const ins_label = document.createElement("span");
+		ins_label.classList.add("ins-label");
+		ins_label.innerText = DRUM_LABELS[ins_name];
+		sampleRequestControls.appendChild(ins_label);
+
 		const requestNewBtn = document.createElement("div");
 		requestNewBtn.className = "request-drum-samples btn";
-		requestNewBtn.innerText = "new";
+		requestNewBtn.innerText = "new sample";
         requestNewBtn.onclick = () => {
             apiCall(id, ROOT_URL, "requestDrumSample", {instrument: ins_name})
             .then(data => {
@@ -538,7 +576,7 @@ function buildDrumControls(){
                 updateDrumSamples();
            });
         }
-        sampleRequestControls.appendChild(requestNewBtn);
+        controlsContainer.appendChild(requestNewBtn);
         registerControl(() => requestNewBtn.click(), "trigger", "request", ins_name);
 
 		const requestVariationBtn = document.createElement("div");
@@ -564,7 +602,7 @@ function buildDrumControls(){
                 updateDrumSamples();
            });
         }
-        sampleRequestControls.appendChild(requestVariationBtn);
+        controlsContainer.appendChild(requestVariationBtn);
         registerControl(() => requestVariationBtn.click(), "trigger", "variation", ins_name);
 
         const trigBtn = document.createElement("div");
@@ -575,20 +613,25 @@ function buildDrumControls(){
     			drumPlayers[ins_name].start(0, 0);
 			}
         }
-        sampleRequestControls.appendChild(trigBtn);
+        controlsContainer.appendChild(trigBtn);
 
-        //const downloadBtn = document.createElement("div");
-        //downloadBtn.className = "btn";
-        //downloadBtn.innerText = "⤓";
-        //downloadBtn.onclick = () => {
-        //    if(drumSampleURL[ins_name]){
-		//		const url = drumSampleURL[ins_name].url;
-		//		const fp = drumSampleURL[ins_name].fp;
+        const downloadBtn = document.createElement("div");
+        downloadBtn.className = "btn";
+        //downloadBtn.innerText = "";
+        downloadBtn.innerHTML = '<i class="nf nf-mdi-download"></i>';
 
-		//		download(url, fp);
-        //    }
-        //}
-        //sampleRequestControls.appendChild(downloadBtn);
+        downloadBtn.onclick = () => {
+            if(drumSampleURL[ins_name]){
+				const url = drumSampleURL[ins_name].url;
+				const fp = drumSampleURL[ins_name].fp;
+
+                console.log(url);
+                console.log(fp);
+				download(url, fp);
+            }
+        }
+        controlsContainer.appendChild(downloadBtn);
+        sampleRequestControls.appendChild(controlsContainer);
 
         const sampleName = document.createElement("span");
         sampleName.classList.add("drum-sample-name");
@@ -600,7 +643,7 @@ function buildDrumControls(){
 		channel.appendChild(sampleRequestControls);
 
 		// FX Chain
-		const { chain, container } = buildFXChain(DRUM_FX_CHAIN, 2, false);
+		const { chain, container } = buildFXChain(DRUM_FX_CHAIN, 2, false, DRUM_HUES[ins_name]);
 		registerFXChain(container, ins_name+"FX");
 		channel.appendChild(container);
 
@@ -622,6 +665,7 @@ function loadNewSamplerSample(data){
     const note_val = parseInt(60+note);
     let sampleMap = {};
     sampleMap[note_val] = url;
+    sample_url = url;
 
     const tempSampler = new Tone.Sampler({
         urls: sampleMap,
@@ -647,7 +691,7 @@ function buildBassControls(){
 	synthName.innerText = "Simple Bass Synth";
 	synthName.classList.add("fx-name");
 
-	const synthColor = "hsl(" + 0 + ", 50%, 50%)";
+	const synthColor = "hsl(" + BASS_HUE + ", 100%, 80%)";
 	synthName.style.backgroundColor = synthColor;
 	synthBox.classList.add("fx-box");
 	synthBox.appendChild(synthName);
@@ -721,9 +765,17 @@ function buildSamplerControls(){
 	const sampleRequestControls = document.createElement("div");
 	sampleRequestControls.classList.add("sample-request-controls");
 
+	const controlsContainer = document.createElement("div");
+	controlsContainer.classList.add("controls-container");
+
+	const ins_label = document.createElement("span");
+	ins_label.classList.add("ins-label");
+	ins_label.innerText = "lead";
+	sampleRequestControls.appendChild(ins_label);
+
 	const requestNewBtn = document.createElement("div");
 	requestNewBtn.className = "request-drum-samples btn";
-	requestNewBtn.innerText = "new";
+	requestNewBtn.innerText = "new sample";
     requestNewBtn.onclick = () => {
         apiPostCall(id, ROOT_URL, "requestSamplerSound", {})
         .then(data => {
@@ -737,7 +789,7 @@ function buildSamplerControls(){
         })
     }
     registerControl(() => requestNewBtn.click(), "trigger", "request", "sound_sample");
-    sampleRequestControls.appendChild(requestNewBtn);
+    controlsContainer.appendChild(requestNewBtn);
 
 	const requestVarBtn = document.createElement("div");
 	requestVarBtn.className = "request-drum-samples btn";
@@ -759,7 +811,7 @@ function buildSamplerControls(){
         })
     }
     registerControl(() => requestNewBtn.click(), "trigger", "variation", "sound_sample");
-    sampleRequestControls.appendChild(requestVarBtn);
+    controlsContainer.appendChild(requestVarBtn);
 
     const trigBtn = document.createElement("div");
     trigBtn.className = "btn";
@@ -770,10 +822,22 @@ function buildSamplerControls(){
             sampler.triggerAttackRelease(60);
         }
     }
-    sampleRequestControls.appendChild(trigBtn);
+    controlsContainer.appendChild(trigBtn);
 
+    const downloadBtn = document.createElement("div");
+    downloadBtn.className = "btn";
+    downloadBtn.innerHTML = '<i class="nf nf-mdi-download"></i>';
+
+    downloadBtn.onclick = () => {
+        if(sample_url){
+            console.log(sample_url)
+            download("sample/" + sample_url, "lead.wav");
+        }
+    }
+    controlsContainer.appendChild(downloadBtn);
+    
+    sampleRequestControls.appendChild(controlsContainer);
     channel.appendChild(sampleRequestControls);
-
 
     const sampleName = document.createElement("span");
     sampleName.classList.add("drum-sample-name");
@@ -787,7 +851,7 @@ function buildSamplerControls(){
 	synthName.innerText = "Sampler";
 	synthName.classList.add("fx-name");
 
-	const synthColor = "hsl(" + 0 + ", 50%, 50%)";
+	const synthColor = "hsl(" + SOUND_HUE + ", 100%, 80%)";
 	synthName.style.backgroundColor = synthColor;
 	synthBox.classList.add("fx-box");
 	synthBox.appendChild(synthName);
@@ -824,7 +888,7 @@ function setup(){
     buildSamplerControls();
 
     // build SYNTH FXs chain
-	let { chain, container } = buildFXChain(SOUND_FX_CHAIN, 2, false);
+	let { chain, container } = buildFXChain(SOUND_FX_CHAIN, 2, false, SOUND_HUE);
 	registerFXChain(container, "samplerFX");
 	const soundChannel = document.createElement("div");
 	soundChannel.appendChild(container);
@@ -832,7 +896,7 @@ function setup(){
 	soundChain = chain;
 
 	// build BASS FXs chain
-	({ chain, container } = buildFXChain(BASS_FX_CHAIN, 2, false));
+	({ chain, container } = buildFXChain(BASS_FX_CHAIN, 2, false, BASS_HUE));
 	registerFXChain(container, "bassFX");
 	const bassChannel = document.createElement("div");
 	bassChannel.appendChild(container);
@@ -851,7 +915,7 @@ function setup(){
     masterChain[masterChain.length - 1].toDestination();
     soundChain[soundChain.length - 1].connect(masterChain[0]);
     bassChain[bassChain.length - 1].connect(masterChain[0]);
-    for(let ins_name in DRUMCOLORS){
+    for(let ins_name in DRUM_HUES){
         drumChain[ins_name][drumChain[ins_name].length - 1].connect(masterChain[0]);
     }
 
@@ -859,7 +923,7 @@ function setup(){
 }
 
 function updateDrumSamples(){
-	for(let ins_name in DRUMCOLORS){
+	for(let ins_name in DRUM_HUES){
     	if(drumSampleToLoad[ins_name] && drumSampleToLoad[ins_name].length > 0){
 
 			const fp = getSamplePath(drumSampleToLoad[ins_name][0]);
@@ -1000,12 +1064,13 @@ function recievedNewBar(
     arrangementView,
     slot,
     barName="bar",
-    hue=0,
+    hue=null,
     oscAddr=null,
+    noteHue=0,
 ){
     const notes = data["notes"];
     const z = data["z"];
-    const bar = new barClass(notes, hue);
+    const bar = new barClass(notes, hue, noteHue);
     bar.z = z;
     const {barElement, barCanvas, barDelete, barAdd} = createBarElement(barName, bar.hue);
     bar.addElement(barElement);
@@ -1076,13 +1141,13 @@ window.onload = () => {
                 document.getElementById("drum-arrangement"),
                 selectedDrumBar,
                 "~",
-                drumLastHue,
+                null,
                 "/drum/pool",
             )
 
             //sendOSC("/drum/pool", drumPool.length);
 
-            drumLastHue += 55;
+            drumLastHue += 12;
         });
     }
     registerControl(() => document.getElementById("request-new-grid").click(), "trigger", "request", "drums");
@@ -1137,11 +1202,12 @@ window.onload = () => {
                 document.getElementById("bass-arrangement"),
                 selectedBassBar,
                 "~ ",
-                bassLastHue,
+                null,
                 "/bass/pool",
+                BASS_HUE,
             );
 
-            bassLastHue += 55;
+            bassLastHue += 12;
         })
     }
     registerControl(() => document.getElementById("request-new-bassline").click(), "trigger", "request", "bassline");
@@ -1173,6 +1239,7 @@ window.onload = () => {
                 "*",
                 hue,
                 "/bass/pool",
+                BASS_HUE,
             );
     	})
     }
@@ -1195,11 +1262,12 @@ window.onload = () => {
                 document.getElementById("sampler-arrangement"),
                 selectedSoundBar,
                 "~ ",
-                soundLastHue,
+                null,
                 "/sampler/pool",
+                SOUND_HUE,
             );
 
-            soundLastHue += 55;
+            soundLastHue += 12;
         })
     }
     registerControl(() => document.getElementById("request-new-melody").click(), "trigger", "request", "melody");
@@ -1230,6 +1298,7 @@ window.onload = () => {
                 "*",
                 hue,
                 "/sampler/pool",
+                SOUND_HUE,
             );
     	})
     }
@@ -1357,17 +1426,17 @@ window.onload = () => {
     }
     registerControl(drumThresholdKnob, "value", "drums", "threshold");
 
-	//const drumMidiDownload = document.getElementById("drum-midi-download");
-	//drumMidiDownload.onclick = function() {
-    //	const midi = drumArrangement.toMidi();
-	//	download(midi, "drum_pattern.mid");
-	//}
+	const drumMidiDownload = document.getElementById("drum-midi-download");
+	drumMidiDownload.onclick = function() {
+    	const midi = drumArrangement.toMidi();
+		download(midi, "drum_pattern.mid");
+	}
 
-	//const bassMidiDownload = document.getElementById("bassline-midi-download");
-	//bassMidiDownload.onclick = function() {
-    //	const midi = bassArrangement.toMidi();
-	//	download(midi, "bassline.mid");
-	//}
+	const bassMidiDownload = document.getElementById("bassline-midi-download");
+	bassMidiDownload.onclick = function() {
+    	const midi = bassArrangement.toMidi();
+		download(midi, "bassline.mid");
+	}
 
 	const OSCloop = new Tone.Loop((time) => {
     	const now = Tone.Transport.position.split(":");
@@ -1387,4 +1456,21 @@ window.onload = () => {
 
 	setup();
 	drawTimeline();
+
+	// finally, scale everything to fit the window
+	const waive = document.querySelector("#waive");
+	console.log(window.innerWidth);
+	console.log(waive.offsetWidth);
+	let scale = window.innerWidth / waive.offsetWidth;
+	//let scale = window.innerHeight / waive.offsetHeight;
+	// let scale = Math.min(
+    // 	window.innerWidth / waive.offsetWidth,
+    // 	window.innerHeight / waive.offsetHeight
+	// )
+	console.log(scale);
+
+	waive.style.transform = "translate(-25%, 0%) scale(" + scale + ")";
+}
+
+window.onresize = () => {
 }

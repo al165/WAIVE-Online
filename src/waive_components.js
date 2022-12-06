@@ -7,10 +7,10 @@ const STARTED = 1;
 
 const WHITE_KEYS = [0, 2, 4, 5, 7, 9, 11];
 
-const DRUMCOLORS = {
-    "00_KD": "#F00",
-    "01_SD": "#F80",
-    "02_HH": "#FF0",
+const DRUM_HUES = {
+	"00_KD": 60,
+	"01_SD": 288,
+	"02_HH": 120,
 }
 
 const DRUM_NAMES = {
@@ -90,7 +90,7 @@ export class BypassableFX extends Tone.ToneAudioNode {
 
 class Bar {
 
-    constructor(hue=0){
+    constructor(hue=null){
         this.state = STOPPED;
         this.z = null;
         this.hue = hue;
@@ -140,7 +140,7 @@ class Bar {
 }
 
 export class SoundBar extends Bar {
-    constructor(pattern, hue=0){
+    constructor(pattern, hue=null){
         super(hue);
         // pattern = [trig, fns] !!
         console.log(pattern);
@@ -155,7 +155,7 @@ export class SoundBar extends Bar {
         const sampleHeight = Math.max(8, barHeight/5);
         const top = (barHeight - sampleHeight)/2;
 
-        ctx.fillStyle = "#AAA";
+        ctx.fillStyle = "hsl(180, 100%, 50%)";
         ctx.fillRect(0, 0, canvas.width, barHeight);
 
         for(let i=0; i < this.trig.length; i++){
@@ -169,9 +169,10 @@ export class SoundBar extends Bar {
 }
 
 export class BassBar extends Bar {
-    constructor(notes, hue=0){
+    constructor(notes, hue=null, noteHue=339){
         super(hue);
         this.notes = notes;
+        this.noteHue = noteHue;
     }
 
     renderToCanvas(canvas, grid=false){
@@ -182,15 +183,15 @@ export class BassBar extends Bar {
         if(grid){
             for(let i = 0; i < 12; i++){
                 if(WHITE_KEYS.indexOf(i) >= 0){
-                    ctx.fillStyle = "#555";
+                    ctx.fillStyle = "#313131";
                 } else {
-                    ctx.fillStyle = "#333";
+                    ctx.fillStyle = "#161616";
                 }
                 ctx.fillRect(0, canvas.height - (i+1)*noteHeight, canvas.width, noteHeight);
             }
         }
 
-        ctx.fillStyle = "#999";
+        ctx.fillStyle = "hsl(" + this.noteHue + ", 100%, 50%)";
         for(const note of this.notes){
             const top = canvas.height - (note[0]+1)*noteHeight;
             const start = gridWidth*note[1];
@@ -201,7 +202,7 @@ export class BassBar extends Bar {
 }
 
 export class DrumBar extends Bar {
-    constructor(beat_grid, hue=0){
+    constructor(beat_grid, hue=null){
         super(hue);
         this.beat_grid = beat_grid;
         this.threshold = 0.2;
@@ -237,7 +238,7 @@ export class DrumBar extends Bar {
         }
 
         for(let i = 0; i < 3; i++){
-            ctx.fillStyle = DRUMCOLORS[DRUM_KEYS[i]];
+            ctx.fillStyle = "hsl(" + DRUM_HUES[DRUM_KEYS[i]] + ", 100%, 50%)";
             for(let j = 0; j < 16; j++){
                 if(this.beat_grid[i][j] < this.threshold){
                     continue

@@ -6,6 +6,7 @@ module.exports = {
   output: {
     filename: 'bundle.js',
     path: path.resolve(__dirname, 'dist'),
+    clean: true,
   },
   module: {
 	rules: [
@@ -20,6 +21,10 @@ module.exports = {
 			name: '[path][name].[ext]',
 		},
 		type: 'asset/resource',
+	  },
+	  {
+    	test: /\.(woff(2)?|ttf|eot|svg)(\?v=\d+\.\d+\.\d+)?$/,
+    	type: 'asset/resource',
 	  }
 	]
   },
