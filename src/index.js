@@ -1085,8 +1085,9 @@ function recievedNewBar(
     }
 
     barDelete.onclick = (event) => {
+        console.log("[del] pressed");
         event.preventDefault();
-        deleteBar(bar, barPool, arrangement, arrangementView, slot, oscMsg);
+        deleteBar(bar, barPool, arrangement, arrangementView, slot, null);
     }
     barPool.push(bar);
    	barPoolView.appendChild(bar.element);
@@ -1470,5 +1471,3 @@ window.onload = () => {
 
 }
 
-window.onresize = () => {
-}
