@@ -27,21 +27,29 @@ h1 {
 
 #waive {
     /*position: relative;*/
-    width: fit-content;
+    width: min-content;
     transform: scale(1);
     transform-origin: top left;
-	display: grid;
-	grid-template-columns: 800px auto;
+    padding: 30px;
+    /*width: 100vw;*/
+	/*display: grid;
+	grid-template-columns: 800px auto;*/
 }
 
 #waive h2 {
     color: #C4C4C4;
     font-size: 32pt;
-	padding-right: 2em;
+	padding-right: 15px;
 	user-select: none;
-	font-weight: bold;
-	width: 5em;
+	/*width: 5em;*/
 }
+
+.instrument-rack {
+    width: min-content;
+	display: grid;
+	grid-template-columns: 800px auto;
+}
+
 
 p {
     font-size: 12pt;
@@ -172,8 +180,9 @@ p {
 }
 
 .bar-pool {
-    overflow: scroll;
-    width: 100%;
+    overflow-x: scroll;
+    overflow-y: hidden;
+    width: 800px;
     height: 80px;
     display: flex;
     flex-direction: row;
@@ -182,6 +191,20 @@ p {
     box-shadow: inset 1px 0px 10px #555;
     grid-column-start: 1;
     grid-column-end: 3;
+}
+
+.bar-pool::-webkit-scrollbar {
+        width: 12px;
+}
+
+.bar-pool::-webkit-scrollbar-track {
+        -webkit-box-shadow: inset 0 0 6px rgba(0,0,0,0.3); 
+            border-radius: 10px;
+}
+
+.bar-pool::-webkit-scrollbar-thumb {
+        border-radius: 10px;
+            -webkit-box-shadow: inset 0 0 6px rgba(0,0,0,0.5); 
 }
 
 .bar {
@@ -289,12 +312,13 @@ p {
 .controls-container {
     display: flex;
     flex-direction: row;
+    justify-content: space-between;
 }
 
 .drum-sample-name {
     font-size: 12pt;
 	grid-column-start: 1;
-	grid-column-end: 6;
+	grid-column-end: 3;
 	background-color: darkgray;
 	overflow: hidden;
 	width: 100%;
@@ -311,6 +335,8 @@ p {
 	margin: 10px 10px;
 	padding: 10px;
 	width: max-content;
+	min-width: 40px;
+	text-align: center;
 	cursor: pointer;
 	user-select: none;
 	color: white;
@@ -431,12 +457,13 @@ select {
 	display: flex;
 	align-items: center;
 	padding: 5px;
+	width: fit-content;
 }
 
 .fx-chain-container {
 	display: flex;
 	flex-direction: row;
-	margin-left: auto;
+	/*margin-left: auto;*/
 }
 
 .beatgrid {

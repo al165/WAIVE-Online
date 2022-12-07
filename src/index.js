@@ -283,7 +283,7 @@ function sendOSC(address, ...data){
     if(!enableOSC){
         return
     }
-    var message = new OSC.Message(address, ...data);
+    let message = new OSC.Message(address, ...data);
     osc.send(message);
 }
 
@@ -319,7 +319,7 @@ function drawTimeline(){
         }
 
         ctx.strokeStyle = "white";
-        ctx.strokeRect(0, 0, width * loopLength / 4, height);
+        ctx.strokeRect(0, 0, width * loopLength / 4 - 2, height - 2);
     }
 }
 
@@ -581,7 +581,7 @@ function buildDrumControls(){
 
 		const requestVariationBtn = document.createElement("div");
 		requestVariationBtn.className = "request-drum-samples btn";
-		requestVariationBtn.innerText = "var";
+		requestVariationBtn.innerText = "variation";
         requestVariationBtn.onclick = () => {
             if(!drumSampleZs[ins_name]){
                 console.log("cannot request variation of sample");
@@ -793,7 +793,7 @@ function buildSamplerControls(){
 
 	const requestVarBtn = document.createElement("div");
 	requestVarBtn.className = "request-drum-samples btn";
-	requestVarBtn.innerText = "var";
+	requestVarBtn.innerText = "variation";
     requestVarBtn.onclick = () => {
         if(!soundSampleZ){
             console.log("need to request sound")
@@ -1110,18 +1110,7 @@ window.onload = () => {
         console.log("Register session complete");
     });
 
-	// set draw loop
-    setInterval(() => {
-    	const p = Tone.Transport.progress;
-    	const loopEnd = loopLength * 0.25;
-    	for(let pbar of document.getElementsByClassName("p-bar")){
-			pbar.style.left = Math.min(100, p*loopEnd*100) + "%";
-    	}
-
-    	for(let meter of meters){
-			meter.update();
-    	}
-    }, 1000/60);
+	setup();
 
     // Setup controls
     document.getElementById("request-new-grid").onclick = () => {
@@ -1178,7 +1167,7 @@ window.onload = () => {
                 document.getElementById("drum-arrangement"),
                 selectedDrumBar,
                 "*",
-                hue,
+                null,
                 "/drum/pool",
             )
     	})
@@ -1237,7 +1226,7 @@ window.onload = () => {
                 document.getElementById("bass-arrangement"),
                 selectedBassBar,
                 "*",
-                hue,
+                null,
                 "/bass/pool",
                 BASS_HUE,
             );
@@ -1296,7 +1285,7 @@ window.onload = () => {
                 document.getElementById("sampler-arrangement"),
                 selectedSoundBar,
                 "*",
-                hue,
+                null,
                 "/sampler/pool",
                 SOUND_HUE,
             );
@@ -1454,22 +1443,31 @@ window.onload = () => {
     	}, time)
 	}, "16n").start(0);
 
-	setup();
 	drawTimeline();
+
+	// set draw loop
+    setInterval(() => {
+    	const p = Tone.Transport.progress;
+    	const loopEnd = loopLength * 0.25;
+    	for(let pbar of document.getElementsByClassName("p-bar")){
+			pbar.style.left = Math.min(100, p*loopEnd*100) + "%";
+    	}
+
+    	for(let meter of meters){
+			meter.update();
+    	}
+    }, 1000/30);
 
 	// finally, scale everything to fit the window
 	const waive = document.querySelector("#waive");
 	console.log(window.innerWidth);
 	console.log(waive.offsetWidth);
-	let scale = window.innerWidth / waive.offsetWidth;
-	//let scale = window.innerHeight / waive.offsetHeight;
-	// let scale = Math.min(
-    // 	window.innerWidth / waive.offsetWidth,
-    // 	window.innerHeight / waive.offsetHeight
-	// )
+	let scale = Math.min(1, window.innerWidth / waive.offsetWidth);
 	console.log(scale);
 
 	waive.style.transform = "translate(-25%, 0%) scale(" + scale + ")";
+	waive.style.width = waive.offsetWidth + "px";
+
 }
 
 window.onresize = () => {
