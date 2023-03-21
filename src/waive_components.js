@@ -11,24 +11,32 @@ const DRUM_HUES = {
 	"00_KD": 60,
 	"01_SD": 288,
 	"02_HH": 120,
+	"03_CL": 200,
+	"06_TH": 20,
 }
 
 const DRUM_NAMES = {
     "00_KD": "kick",
     "01_SD": "snare",
     "02_HH": "hat",
+	"03_CL": "clap",
+	"06_TH": "high tom"
 }
 
 const DRUM_KEYS = {
     0: "00_KD",
     1: "01_SD",
     2: "02_HH",
+	3: "03_CL",
+	4: "06_TH",
 }
 
 const DRUM_MIDI_MAP = {
     "00_KD": 36,
     "01_SD": 38,
     "02_HH": 42,
+	"03_CL": 39,
+	"06_TH": 43,
 }
 
 /* wrapper for effect class / bus
@@ -228,16 +236,16 @@ export class DrumBar extends Bar {
                 ctx.lineTo(j*barwidth/16, barHeight);
                 ctx.stroke();
             }
-            for(let i = 0; i <= 3; i++){
+            for(let i = 0; i <= 5; i++){
                 ctx.strokeStyle = "#666";
                 ctx.beginPath();
-                ctx.moveTo(0, i*barHeight/3);
-                ctx.lineTo(barwidth, i*barHeight/3);
+                ctx.moveTo(0, i*barHeight/5);
+                ctx.lineTo(barwidth, i*barHeight/5);
                 ctx.stroke();
             }
         }
 
-        for(let i = 0; i < 3; i++){
+        for(let i = 0; i < 5; i++){
             ctx.fillStyle = "hsl(" + DRUM_HUES[DRUM_KEYS[i]] + ", 100%, 50%)";
             for(let j = 0; j < 16; j++){
                 if(this.beat_grid[i][j] < this.threshold){
@@ -248,9 +256,9 @@ export class DrumBar extends Bar {
 
                 ctx.fillRect(
                     j*(barwidth/16),
-                    (i+(1-velocity))*(barHeight/3),
+                    (i+(1-velocity))*(barHeight/5),
                     barwidth/16,
-                    (barHeight/3)*(velocity),
+                    (barHeight/5)*(velocity),
                 );
             }
         }

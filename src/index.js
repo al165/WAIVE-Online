@@ -117,36 +117,48 @@ const DRUM_HUES = {
 	"00_KD": 60,
 	"01_SD": 288,
 	"02_HH": 120,
+	"03_CL": 200,
+	"06_TH": 20,
 }
 
 const DRUM_NAMES = {
 	"00_KD": "kd",
 	"01_SD": "sd",
 	"02_HH": "hh",
+	"03_CL": "cl",
+	"06_TH": "th",
 }
 
 const DRUM_LABELS = {
 	"00_KD": "kick",
 	"01_SD": "snare",
 	"02_HH": "hihat",
+	"03_CL": "clap",
+	"06_TH": "high tom"
 }
 
 const DRUM_KEYS = {
 	0: "00_KD",
 	1: "01_SD",
 	2: "02_HH",
+	3: "03_CL",
+	4: "06_TH",
 }
 
 const DRUM_MIDI_MAP = {
 	"00_KD": 36,
 	"01_SD": 38,
 	"02_HH": 42,
+	"03_CL": 39,
+	"06_TH": 43,
 }
 
 const DRUM_MIDI_NAME = {
 	36: "00_KD",
 	38: "01_SD",
 	42: "02_HH",
+	39: "03_CL",
+	43: "06_TH"
 }
 
 let drumChain = {};
@@ -570,9 +582,12 @@ function buildDrumControls(){
                     console.log("no drum sample data for " + ins_name);
                 	return
                 }
+                console.log(data);
                 const ds = data["drum_samples"];
                 drumSampleZs[ins_name] = data["z"];
                 drumSampleToLoad[ins_name] = [ds];
+    			const label = `${data["source"]}: ${data["filename"]}`;
+    			drumSampleLabels[ins_name].innerText = label;
                 updateDrumSamples();
            });
         }
@@ -596,9 +611,10 @@ function buildDrumControls(){
                 const ds = data["drum_samples"];
                 const z = data["z"];
                 console.log("requestDrumSample");
-                console.log(z);
                 drumSampleZs[ins_name] = z;
-                drumSampleToLoad[ins_name] = [ds];//drumSampleToLoad[ins_name].concat(ds);
+                drumSampleToLoad[ins_name] = [ds];
+    			const label = `${data["source"]}: ${data["filename"]}`;
+    			drumSampleLabels[ins_name].innerText = label;
                 updateDrumSamples();
            });
         }
@@ -925,7 +941,7 @@ function setup(){
 function updateDrumSamples(){
 	for(let ins_name in DRUM_HUES){
     	if(drumSampleToLoad[ins_name] && drumSampleToLoad[ins_name].length > 0){
-
+			console.log("updateDrumSamples: " + drumSampleToLoad[ins_name][0]);
 			const fp = getSamplePath(drumSampleToLoad[ins_name][0]);
             const url = ROOT_URL + "drum/" + fp[0] + "/" + fp[1] + "/" + fp[2];
 
@@ -935,8 +951,8 @@ function updateDrumSamples(){
                 drumPlayers[ins_name].buffer = buffer;
             });
 
-			const label = `${cleanName(fp[2])}`;
-			drumSampleLabels[ins_name].innerText = label;
+			//const label = `${cleanName(fp[2])}`;
+			//drumSampleLabels[ins_name].innerText = label;
 			drumSampleURL[ins_name] = {url: url, fp: fp};
     	}
 	}
@@ -1046,6 +1062,7 @@ function drawArrangementView(arrangement, arrangementView){
         const barCanvas = document.createElement("canvas");
         barCanvas.classList.add("bar-arrangement");
         barCanvas.style.left = i*200 + "px";
+        barCanvas.height = "500";
         arrangementView.appendChild(barCanvas);
         bar.renderToCanvas(barCanvas, true);
 
