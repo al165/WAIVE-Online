@@ -46,7 +46,6 @@ def index():
 
 @app.route("/api/<func>/<id>", methods=["GET"])
 def apiRequest(func, id):
-    # print(f'apiRequest: /api/{func}/{id}')
     data = request.args.to_dict()
 
     msg_q.put((func, id, data))
@@ -55,8 +54,8 @@ def apiRequest(func, id):
     return data
 
 
-@app.route("/drum/<category>/<folder>/<fn>")
-def getDrumAudioFile(category, folder, fn):
+@app.route("/sample/<category>/<folder>/<fn>")
+def getSampleAudioFile(category, folder, fn):
     fn = fn.split('.')[0] + ".mp3"
     return send_from_directory(
         os.path.join(DRUM_ROOT, category, folder),
@@ -65,23 +64,23 @@ def getDrumAudioFile(category, folder, fn):
     )
 
 
-@app.route("/sound/<category>/<folder>/<fn>")
-def getSoundAudioFile(category, folder, fn):
-    return send_from_directory(
-        os.path.join(SOUNDS_ROOT, category, folder),
-        fn,
-        as_attachment=False,
-    )
+# @app.route("/sound/<category>/<folder>/<fn>")
+# def getSoundAudioFile(category, folder, fn):
+#     return send_from_directory(
+#         os.path.join(SOUNDS_ROOT, category, folder),
+#         fn,
+#         as_attachment=False,
+#     )
 
 
-@app.route("/sample/<category>/<fn>")
-def getSampleAudio(category, fn):
-    # print(os.path.join(SOUNDS_ROOT, category))
-    return send_from_directory(
-        os.path.join(SOUNDS_ROOT, category),
-        fn,
-        as_attachment=False,
-    )
+# @app.route("/sample/<category>/<fn>")
+# def getSampleAudio(category, fn):
+#     # print(os.path.join(SOUNDS_ROOT, category))
+#     return send_from_directory(
+#         os.path.join(SOUNDS_ROOT, category),
+#         fn,
+#         as_attachment=False,
+#    )
 
 if __name__ == "__main__":
     app.run(host='0.0.0.0')
