@@ -6,8 +6,9 @@ from flask_cors import CORS
 sys.path.extend(["../../REALTIME/", "../../COMMON_UTILS/"])
 from waive_server import WaiveServer
 
-DRUM_ROOT = "../../SAMPLE_IDENTIFICATION/DRUM_SAMPLES/"
-SOUNDS_ROOT = "../../SAMPLE_IDENTIFICATION/SYNTH_SAMPLES_WAV/"
+# DRUM_ROOT = "../../SAMPLE_IDENTIFICATION/DRUM_SAMPLES/"
+# SOUNDS_ROOT = "../../SAMPLE_IDENTIFICATION/SYNTH_SAMPLES_WAV/"
+SAMPLES_ROOT = "../../SAMPLE_IDENTIFICATION/"
 
 app = Flask(
     __name__,
@@ -54,15 +55,21 @@ def apiRequest(func, id):
     return data
 
 
-@app.route("/sample/<category>/<folder>/<fn>")
-def getSampleAudioFile(category, folder, fn):
-    fn = fn.split('.')[0] + ".mp3"
-    return send_from_directory(
-        os.path.join(DRUM_ROOT, category, folder),
-        fn,
-        as_attachment=False,
-    )
-
+@app.route("/sample/<group>/<category>/<folder>/<fn>")
+def getSampleAudioFile(group, category, folder, fn):
+    if group == "drums":
+        fn = fn.split('.')[0] + ".mp3"
+        return send_from_directory(
+            os.path.join(SAMPLES_ROOT, group, category, folder),
+            fn,
+            as_attachment=False,
+        )
+    else:
+        return send_from_directory(
+            os.path.join(SAMPLES_ROOT, group, group, category),
+            fn,
+            as_attachment=False
+        )
 
 # @app.route("/sound/<category>/<folder>/<fn>")
 # def getSoundAudioFile(category, folder, fn):
