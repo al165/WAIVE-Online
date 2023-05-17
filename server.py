@@ -56,6 +56,7 @@ def apiRequest(func, id):
 
 @app.route("/drum/<category>/<folder>/<fn>")
 def getDrumAudioFile(category, folder, fn):
+    fn = fn.split('.')[0] + ".mp3"
     return send_from_directory(
         os.path.join(DRUM_ROOT, category, folder),
         fn,
