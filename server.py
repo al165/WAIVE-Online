@@ -66,7 +66,7 @@ def getSampleAudioFile(group, category, folder, fn):
         )
     else:
         return send_from_directory(
-            os.path.join(SAMPLES_ROOT, group, category),
+            os.path.join(SAMPLES_ROOT, category, folder),
             fn,
             as_attachment=False
         )
