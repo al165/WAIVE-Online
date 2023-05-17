@@ -23,6 +23,7 @@ ws.drum_generator_params["root"] = "../"
 ws.synth_generator_params["root"] = "../"
 ws.bassline_generator_params["root"] = "../"
 ws.melody_generator_params["root"] = "../"
+ws.initModels()
 
 msg_q = ws.messageQueue
 r_q = ws.returnQueue
@@ -45,7 +46,7 @@ def index():
 
 @app.route("/api/<func>/<id>", methods=["GET"])
 def apiRequest(func, id):
-    print(f'apiRequest: /api/{func}/{id}')
+    # print(f'apiRequest: /api/{func}/{id}')
     data = request.args.to_dict()
 
     msg_q.put((func, id, data))
@@ -75,7 +76,7 @@ def getSoundAudioFile(category, folder, fn):
 
 @app.route("/sample/<category>/<fn>")
 def getSampleAudio(category, fn):
-    print(os.path.join(SOUNDS_ROOT, category))
+    # print(os.path.join(SOUNDS_ROOT, category))
     return send_from_directory(
         os.path.join(SOUNDS_ROOT, category),
         fn,
