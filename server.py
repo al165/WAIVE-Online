@@ -6,7 +6,7 @@ from flask_cors import CORS
 sys.path.extend(["../../REALTIME/", "../../COMMON_UTILS/"])
 from waive_server import WaiveServer
 
-# DRUM_ROOT = "../../SAMPLE_IDENTIFICATION/DRUM_SAMPLES/"
+DRUM_ROOT = "../../SAMPLE_IDENTIFICATION/DRUM_SAMPLES/"
 # SOUNDS_ROOT = "../../SAMPLE_IDENTIFICATION/SYNTH_SAMPLES_WAV/"
 SAMPLES_ROOT = "../../SAMPLE_IDENTIFICATION/"
 
@@ -60,13 +60,13 @@ def getSampleAudioFile(group, category, folder, fn):
     if group == "drums":
         fn = fn.split('.')[0] + ".mp3"
         return send_from_directory(
-            os.path.join(SAMPLES_ROOT, group, category, folder),
+            os.path.join(DRUM_ROOT, category, folder),
             fn,
             as_attachment=False,
         )
     else:
         return send_from_directory(
-            os.path.join(SAMPLES_ROOT, group, group, category),
+            os.path.join(SAMPLES_ROOT, group, category),
             fn,
             as_attachment=False
         )
